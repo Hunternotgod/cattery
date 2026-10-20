@@ -1,0 +1,27 @@
+---
+import { MIAO_RELEASE } from '../data/miao-release';
+
+interface Props {
+  class?: string;
+  label?: string;
+}
+
+const { class: className = 'text-link', label = '下载 Windows 版' } = Astro.props;
+const fallback = MIAO_RELEASE.downloadUrl ?? MIAO_RELEASE.releaseUrl;
+---
+<span class="download-control">
+  <a
+    class={className}
+    href={fallback}
+    data-miao-download
+    data-fallback-download={fallback}
+    data-release-page={MIAO_RELEASE.releaseUrl}
+  >
+    <span data-download-label>{label}</span>
+  </a>
+  <span class="download-status" data-download-status aria-live="polite"></span>
+</span>
+
+<script>
+  import '../scripts/download-latest';
+</script>

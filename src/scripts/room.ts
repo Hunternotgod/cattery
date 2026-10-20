@@ -1,27 +1,32 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { gsap } from 'gsap';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import type { CharacterKind } from './room/characters';
 
 const C = {
-  paper: 0xf2ebdd,
-  paperDeep: 0xe8decc,
-  ink: 0x191714,
-  inkSoft: 0x5f5a52,
-  tomato: 0xd9472b,
-  tomatoDark: 0xb9361f,
-  cat: 0xf39a3d,
-  catDark: 0xe8792b,
-  pig: 0xf3a7b9,
-  pigDark: 0xe98ba0,
-  corgi: 0xe8792b,
-  cream: 0xf7e8d4,
-  white: 0xfffaf0,
-  wood: 0xc89b6a,
-  woodDark: 0xa97a4f,
-  mint: 0xbdf4e4,
-  sky: 0xcfe8e2,
-  green: 0x5c7258,
-  dark: 0x1b1d22,
+  paper: 0x070a12,
+  paperDeep: 0x0c1320,
+  ink: 0x05070c,
+  inkSoft: 0x6f849a,
+  tomato: 0xff3ea5,
+  tomatoDark: 0x4debff,
+  cat: 0xff9a3d,
+  catDark: 0xe56a12,
+  pig: 0xff6fae,
+  pigDark: 0xe95599,
+  corgi: 0xff9a3d,
+  cream: 0xf4fbff,
+  white: 0xf4fbff,
+  wood: 0x1a2433,
+  woodDark: 0x0f1724,
+  mint: 0x4debff,
+  sky: 0x0b1222,
+  green: 0x4debff,
+  dark: 0x05070c,
 };
 
 type Character = THREE.Group & {
@@ -144,17 +149,68 @@ function makeTexture(width: number, height: number, draw: (ctx: CanvasRenderingC
 
 function signTexture(): THREE.CanvasTexture {
   return makeTexture(640, 180, (ctx) => {
-    ctx.fillStyle = '#f7e8d4';
+    ctx.fillStyle = '#05070c';
     ctx.fillRect(0, 0, 640, 180);
-    ctx.strokeStyle = '#191714';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(10, 10, 620, 160);
-    ctx.fillStyle = '#191714';
-    ctx.font = '800 92px Arial, sans-serif';
+    ctx.strokeStyle = '#4debff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(8, 8, 624, 164);
+    ctx.shadowColor = '#ff3ea5';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ff3ea5';
+    ctx.font = '800 88px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('cattery', 320, 118);
-    ctx.fillStyle = '#d9472b';
-    ctx.fillRect(245, 138, 150, 8);
+    ctx.fillText('cattery', 320, 112);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#4debff';
+    ctx.fillRect(250, 134, 140, 6);
+  });
+}
+
+function cyberWindowTexture(): THREE.CanvasTexture {
+  return makeTexture(1024, 640, (ctx) => {
+    const sky = ctx.createLinearGradient(0, 0, 0, 640);
+    sky.addColorStop(0, '#060916');
+    sky.addColorStop(0.55, '#142447');
+    sky.addColorStop(1, '#07141f');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, 1024, 640);
+    const colors = ['#4debff', '#ff3ea5', '#8d6bff', '#ff9a3d'];
+    for (let i = 0; i < 28; i += 1) {
+      const w = 22 + ((i * 37) % 52);
+      const h = 100 + ((i * 73) % 260);
+      const x = (i * 79) % 990;
+      const y = 250 - h;
+      ctx.fillStyle = i % 3 === 0 ? '#0b1725' : '#101d30';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = colors[i % colors.length];
+      for (let j = 0; j < 8; j += 1) {
+        if ((i + j * 3) % 4 === 0) continue;
+        ctx.globalAlpha = 0.55 + (j % 3) * 0.15;
+        ctx.fillRect(x + 5 + (j % 3) * 9, y + 12 + Math.floor(j / 3) * 17, 3, 7);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = '#07101a';
+    ctx.fillRect(0, 420, 1024, 220);
+    for (let i = 0; i < 24; i += 1) {
+      const x = (i * 47) % 1024;
+      const w = 3 + (i % 5);
+      const h = 30 + (i * 11) % 80;
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.globalAlpha = 0.35;
+      ctx.fillRect(x, 440 + (i % 6) * 18, w, h);
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(77,235,255,.35)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 26; i += 1) {
+      const x = (i * 101) % 1024;
+      const y = (i * 53) % 620;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 12, y + 36);
+      ctx.stroke();
+    }
   });
 }
 
@@ -201,19 +257,29 @@ function laptopTexture(): THREE.CanvasTexture {
 
 function artTexture(variant: number): THREE.CanvasTexture {
   return makeTexture(360, 480, (ctx) => {
-    ctx.fillStyle = '#f7e8d4';
+    ctx.fillStyle = '#05070c';
     ctx.fillRect(0, 0, 360, 480);
-    ctx.fillStyle = variant === 0 ? '#d9472b' : '#e8792b';
+    ctx.strokeStyle = '#4debff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(10, 10, 340, 460);
+    ctx.shadowColor = '#ff3ea5';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = variant === 0 ? '#ff3ea5' : '#4debff';
     ctx.beginPath();
-    ctx.arc(180, 210, 110, 0, Math.PI * 2);
+    ctx.arc(180, 210, 105, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#f3a7b9';
-    ctx.fillRect(70, 300, 220, 26);
-    ctx.fillStyle = '#191714';
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#4debff';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(70, 320);
+    ctx.lineTo(290, 320);
+    ctx.stroke();
+    ctx.fillStyle = '#e9f7ff';
     ctx.font = '700 28px Arial, sans-serif';
     ctx.fillText('CATTERY', 82, 70);
     ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('room notes / 2026', 82, 104);
+    ctx.fillText('NEON ROOM / 2026', 82, 104);
   });
 }
 function createCat(): Character {
@@ -285,6 +351,7 @@ function createPig(): Character {
 
   addMesh(group, new THREE.CapsuleGeometry(0.43, 0.45, 8, 16), pink, [0, 0.62, 0], [0, 0, 0], [1.05, 1, 0.9]);
   addMesh(group, new THREE.SphereGeometry(0.25, 24, 16), pinkDark, [0, 0.6, 0.31], [0, 0, 0], [1, 0.85, 0.55]);
+  addMesh(group, new THREE.SphereGeometry(0.23, 20, 14), cream, [0, 0.43, 0.25], [0, 0, 0], [1.05, 1.2, 0.55]);
 
   const head = new THREE.Group();
   head.position.set(0, 1.18, 0.03);
@@ -334,7 +401,8 @@ function createCorgi(): Character {
   const pink = toon(0xef7890);
 
   addMesh(group, new THREE.CapsuleGeometry(0.4, 0.3, 8, 16), orange, [0, 0.52, 0], [0, 0, 0], [1, 0.92, 0.85]);
-  addMesh(group, new THREE.SphereGeometry(0.24, 20, 14), cream, [0, 0.48, 0.28], [0, 0, 0], [1, 0.8, 0.55]);
+  addMesh(group, new THREE.SphereGeometry(0.24, 20, 14), cream, [0, 0.5, 0.29], [0, 0, 0], [1, 0.95, 0.55]);
+  addMesh(group, new THREE.SphereGeometry(0.22, 20, 14), cream, [0, 0.34, 0.2], [0, 0, 0], [1.1, 1.1, 0.55]);
 
   const head = new THREE.Group();
   head.position.set(0, 1.02, 0.05);
@@ -351,11 +419,13 @@ function createCorgi(): Character {
   addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [0.135, 0.1, 0.34]);
 
   addMesh(head, new THREE.SphereGeometry(0.2, 24, 16), cream, [0, -0.08, 0.27], [0, 0, 0], [1.1, 0.78, 0.72]);
+  addMesh(head, new THREE.SphereGeometry(0.16, 20, 14), cream, [0, 0.04, 0.31], [0, 0, 0], [0.62, 1.35, 0.3]);
   addMesh(head, new THREE.SphereGeometry(0.045, 12, 8), ink, [0, -0.03, 0.44]);
   addMesh(head, new THREE.BoxGeometry(0.09, 0.07, 0.03), pink, [0, -0.12, 0.4], [0.2, 0, 0]);
 
-  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), orange, [-0.2, 0.16, 0.03]);
-  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), orange, [0.2, 0.16, 0.03]);
+  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), cream, [-0.2, 0.16, 0.03]);
+  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), cream, [0.2, 0.16, 0.03]);
+  addMesh(group, new THREE.TorusGeometry(0.23, 0.025, 8, 24), new THREE.MeshBasicMaterial({ color: C.tomatoDark }), [0, 0.79, 0], [Math.PI / 2, 0, 0]);
   addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [-0.35, 0.55, -0.05], [0, 0, 0.4]);
   addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [0.35, 0.55, -0.05], [0, 0, -0.4]);
 
@@ -411,9 +481,42 @@ function createRoom(scene: THREE.Scene): void {
   const windowFrame = box(3.2, 2.2, 0.12, C.cream);
   windowFrame.position.set(0.2, 2.85, -3.86);
   scene.add(windowFrame);
-  const sky = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.8), new THREE.MeshBasicMaterial({ color: C.sky }));
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.8), new THREE.MeshBasicMaterial({ map: cyberWindowTexture() }));
   sky.position.set(0.2, 2.85, -3.79);
   scene.add(sky);
+
+  const neonMaterial = new THREE.MeshBasicMaterial({ color: C.tomatoDark });
+  const magentaMaterial = new THREE.MeshBasicMaterial({ color: C.tomato });
+  const makeGlowStrip = (w: number, h: number, d: number, x: number, y: number, z: number, color: THREE.Material) => {
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), color);
+    strip.position.set(x, y, z);
+    scene.add(strip);
+    return strip;
+  };
+  makeGlowStrip(3.1, 0.035, 0.035, 0.2, 1.78, -3.76, neonMaterial);
+  makeGlowStrip(0.035, 1.9, 0.035, -1.42, 2.85, -3.76, magentaMaterial);
+  makeGlowStrip(0.035, 1.9, 0.035, 1.82, 2.85, -3.76, neonMaterial);
+  makeGlowStrip(9.4, 0.035, 0.035, 0, 0.18, -3.78, magentaMaterial);
+  makeGlowStrip(2.8, 0.025, 0.025, 2.9, 3.25, -3.4, neonMaterial);
+  makeGlowStrip(2.8, 0.025, 0.025, 2.9, 0.35, -3.4, magentaMaterial);
+
+  for (let i = 0; i < 8; i += 1) {
+    const panel = rounded(0.38, 0.38, 0.08, 0.04, i % 2 === 0 ? C.paperDeep : C.woodDark);
+    panel.position.set(-3.8 + (i % 4) * 0.42, 3.8 - Math.floor(i / 4) * 0.42, -3.88);
+    scene.add(panel);
+  }
+
+  const cityRainGeometry = new THREE.BufferGeometry();
+  const cityRainPositions = new Float32Array(80 * 3);
+  for (let i = 0; i < 80; i += 1) {
+    cityRainPositions[i * 3] = -1.4 + ((i * 37) % 280) / 100;
+    cityRainPositions[i * 3 + 1] = 1.9 + ((i * 23) % 170) / 100;
+    cityRainPositions[i * 3 + 2] = -3.73;
+  }
+  cityRainGeometry.setAttribute('position', new THREE.BufferAttribute(cityRainPositions, 3));
+  const cityRain = new THREE.Points(cityRainGeometry, new THREE.PointsMaterial({ color: 0x9beeff, size: 0.018, transparent: true, opacity: 0.7, depthWrite: false }));
+  scene.add(cityRain);
+  scene.userData.cityRain = cityRain;
   const mullionV = box(0.06, 1.8, 0.05, C.woodDark);
   mullionV.position.set(0.2, 2.85, -3.77);
   scene.add(mullionV);
@@ -448,20 +551,36 @@ function createRoom(scene: THREE.Scene): void {
   drawer.position.set(0.4, 0.72, 0.08);
   desk.add(drawer);
 
-  const laptopBase = rounded(1.1, 0.06, 0.68, 0.03, C.dark);
-  laptopBase.position.set(-1.8, 1.12, -1.06);
-  scene.add(laptopBase);
-  const laptopScreen = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.08, 0.64),
-    new THREE.MeshBasicMaterial({ map: laptopTexture() }),
-  );
-  laptopScreen.position.set(-1.8, 1.45, -1.39);
-  laptopScreen.rotation.x = -0.08;
-  scene.add(laptopScreen);
-  const laptopFrame = box(1.16, 0.72, 0.05, C.dark);
-  laptopFrame.position.set(-1.8, 1.45, -1.42);
-  laptopFrame.rotation.x = -0.08;
-  scene.add(laptopFrame);
+  [-3.6, -2.7, -1.8].forEach((x, index) => {
+    const frame = rounded(0.86, 0.54, 0.06, 0.03, C.dark);
+    frame.position.set(x, 1.76, -2.3);
+    scene.add(frame);
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.46), new THREE.MeshBasicMaterial({ map: laptopTexture() }));
+    screen.position.set(x, 1.76, -2.26);
+    scene.add(screen);
+    const glow = new THREE.PointLight(index === 1 ? C.tomato : C.tomatoDark, 1.8, 2.6, 2);
+    glow.position.set(x, 1.6, -2.0);
+    scene.add(glow);
+  });
+
+  const keyboard = box(0.78, 0.035, 0.24, C.dark);
+  keyboard.position.set(-2.7, 1.11, -1.08);
+  scene.add(keyboard);
+  const keyboardGlow = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.008, 0.018), neonMaterial);
+  keyboardGlow.position.set(-2.7, 1.13, -0.96);
+  scene.add(keyboardGlow);
+
+  const pcTower = rounded(0.62, 1.25, 0.56, 0.05, C.dark);
+  pcTower.position.set(-1.05, 0.72, -2.35);
+  scene.add(pcTower);
+  const pcWindow = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.86), new THREE.MeshBasicMaterial({ color: 0x101d2f }));
+  pcWindow.position.set(-1.05, 0.8, -2.06);
+  scene.add(pcWindow);
+  [0.95, 0.72, 0.49].forEach((y, index) => {
+    const fan = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.018, 8, 24), index === 1 ? magentaMaterial : neonMaterial);
+    fan.position.set(-1.05, y, -2.04);
+    scene.add(fan);
+  });
 
   const mug = cylinder(0.11, 0.11, 0.22, C.cream, 16);
   mug.position.set(-1.95, 1.2, -1.65);
@@ -500,24 +619,56 @@ function createRoom(scene: THREE.Scene): void {
     }
   }
 
+  const chair = new THREE.Group();
+  chair.position.set(-2.9, 0, 0.05);
+  scene.add(chair);
+  const chairSeat = rounded(1.2, 0.16, 1.0, 0.08, C.dark);
+  chairSeat.position.set(0, 0.55, 0);
+  chair.add(chairSeat);
+  const chairBack = rounded(1.2, 1.0, 0.16, 0.08, C.dark);
+  chairBack.position.set(0, 1.0, -0.48);
+  chairBack.rotation.x = -0.08;
+  chair.add(chairBack);
+  addMesh(chair, new THREE.BoxGeometry(1.1, 0.028, 0.04), neonMaterial, [0, 1.48, -0.52]);
+  addMesh(chair, new THREE.BoxGeometry(0.028, 0.8, 0.04), magentaMaterial, [-0.58, 0.96, -0.39]);
+  const chairBase = cylinder(0.06, 0.2, 0.4, C.dark, 12);
+  chairBase.position.set(0, 0.22, 0);
+  chair.add(chairBase);
+
+  const pigStage = rounded(1.55, 0.22, 1.3, 0.05, C.dark);
+  pigStage.position.set(2.45, 0.12, -1.55);
+  scene.add(pigStage);
+  addMesh(scene, new THREE.BoxGeometry(1.35, 0.025, 0.025), neonMaterial, [2.45, 0.24, -0.92]);
+  addMesh(scene, new THREE.BoxGeometry(1.85, 0.025, 0.025), magentaMaterial, [0.8, 0.2, 2.18]);
+
+  const corgiBed = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.22, 14, 36), toon(C.tomato));
+  corgiBed.scale.set(1.25, 0.65, 1);
+  corgiBed.rotation.x = Math.PI / 2;
+  corgiBed.position.set(0.8, 0.27, 1.55);
+  scene.add(corgiBed);
+  const corgiCushion = new THREE.Mesh(new THREE.SphereGeometry(0.56, 28, 16), toon(C.paperDeep));
+  corgiCushion.scale.set(1.2, 0.22, 0.9);
+  corgiCushion.position.set(0.8, 0.3, 1.55);
+  scene.add(corgiCushion);
+
   const pig = createPig();
-  pig.position.set(2.55, 0, -1.9);
-  pig.rotation.y = -0.1;
-  snapToSurface(pig, 0);
+  pig.position.set(2.45, 0, -1.55);
+  pig.rotation.y = -0.18;
+  snapToSurface(pig, 0.24);
   scene.add(pig);
   scene.userData.pig = pig;
 
   const cat = createCat();
-  cat.position.set(-3.8, 0, -1.32);
-  cat.rotation.y = 0.16;
-  snapToSurface(cat, 1.08);
+  cat.position.set(-2.9, 0, 0.05);
+  cat.rotation.y = 0.36;
+  snapToSurface(cat, 0.64);
   scene.add(cat);
   scene.userData.cat = cat;
 
   const corgi = createCorgi();
-  corgi.position.set(2.0, 0, 1.1);
-  corgi.rotation.y = -0.28;
-  snapToSurface(corgi, 0.05);
+  corgi.position.set(0.8, 0, 1.55);
+  corgi.rotation.y = -0.2;
+  snapToSurface(corgi, 0.34);
   scene.add(corgi);
   scene.userData.corgi = corgi;
 
@@ -591,15 +742,19 @@ function createRoom(scene: THREE.Scene): void {
   dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
   const dust = new THREE.Points(
     dustGeometry,
-    new THREE.PointsMaterial({ color: 0xfff6e7, size: 0.035, transparent: true, opacity: 0.55, depthWrite: false }),
+    new THREE.PointsMaterial({ color: 0x9beeff, size: 0.035, transparent: true, opacity: 0.4, depthWrite: false }),
   );
   scene.add(dust);
+  const ceilingPanel = rounded(3.2, 0.06, 1.1, 0.04, C.dark);
+  ceilingPanel.position.set(0, 4.55, 0.4);
+  const ceilingPanelMaterial = new THREE.MeshBasicMaterial({ color: 0x182333 });
+  ceilingPanel.material = ceilingPanelMaterial;
+  scene.add(ceilingPanel);
+  scene.userData.ceilingPanel = ceilingPanel;
   scene.userData.dust = dust;
 
   [
     ['desk', deskTop],
-    ['laptop base', laptopBase],
-    ['laptop screen', laptopFrame],
     ['bookshelf', shelf],
     ['cat tree', catTree],
     ['boxes', boxes],
@@ -690,8 +845,9 @@ export function initRoom(root: HTMLElement): void {
 
   const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 80);
 
-  scene.add(new THREE.HemisphereLight(0xfff2dc, 0x7a6553, 1.7));
-  const key = new THREE.DirectionalLight(0xfff2dc, 2.4);
+  const hemi = new THREE.HemisphereLight(0x4debff, 0x05070c, 0.55);
+  scene.add(hemi);
+  const key = new THREE.DirectionalLight(0x9beeff, 0.8);
   key.position.set(-4, 7, 5);
   key.castShadow = !isMobile;
   key.shadow.mapSize.set(1024, 1024);
@@ -702,12 +858,77 @@ export function initRoom(root: HTMLElement): void {
   key.shadow.camera.near = 1;
   key.shadow.camera.far = 18;
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xffd2b0, 0.9);
+  const fill = new THREE.DirectionalLight(0x6fa8ff, 0.45);
   fill.position.set(4, 3, 2);
   scene.add(fill);
-  const lampLight = new THREE.PointLight(0xffb46a, 13, 7, 2);
+  const lampLight = new THREE.PointLight(0xffb38a, 2.5, 7, 2);
   lampLight.position.set(-3.9, 2.2, -1.9);
   scene.add(lampLight);
+  const ceilingLight = new THREE.PointLight(0xffd8b0, 0, 12, 2);
+  ceilingLight.position.set(0, 4.2, 0);
+  scene.add(ceilingLight);
+  const windowLight = new THREE.PointLight(0x4debff, 4, 8, 2);
+  windowLight.position.set(0.2, 2.8, -3.2);
+  scene.add(windowLight);
+  const shelfLight = new THREE.PointLight(0xff3ea5, 3.5, 6, 2);
+  shelfLight.position.set(2.8, 2.6, -2.9);
+  scene.add(shelfLight);
+  const frontFill = new THREE.DirectionalLight(0xc8f4ff, 1.35);
+  frontFill.position.set(0, 2.8, 6);
+  scene.add(frontFill);
+  const characterLight = new THREE.PointLight(0xfff0e0, 1.5, 9, 2);
+  characterLight.position.set(0, 1.7, 2.4);
+  scene.add(characterLight);
+  scene.userData.lighting = { hemi, key, fill, lampLight, ceilingLight, windowLight, shelfLight, frontFill, characterLight };
+
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    isMobile ? 0.18 : 0.45,
+    0.35,
+    0.82,
+  );
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+
+  const applyLighting = (lightsOn: boolean) => {
+    const lighting = scene.userData.lighting as {
+      hemi: THREE.HemisphereLight;
+      key: THREE.DirectionalLight;
+      fill: THREE.DirectionalLight;
+      lampLight: THREE.PointLight;
+      ceilingLight: THREE.PointLight;
+      windowLight: THREE.PointLight;
+      shelfLight: THREE.PointLight;
+      frontFill: THREE.DirectionalLight;
+      characterLight: THREE.PointLight;
+    };
+    lighting.hemi.intensity = lightsOn ? 2.6 : (isMobile ? 1.05 : 0.9);
+    lighting.hemi.color.setHex(lightsOn ? 0xbfefff : 0x2d6f9f);
+    lighting.key.intensity = lightsOn ? 3.2 : (isMobile ? 1.25 : 1.1);
+    lighting.fill.intensity = lightsOn ? 0.8 : 0.3;
+    lighting.lampLight.intensity = lightsOn ? 10 : 2.5;
+    lighting.ceilingLight.intensity = lightsOn ? 20 : 0;
+    lighting.windowLight.intensity = lightsOn ? 1.5 : 2.5;
+    lighting.shelfLight.intensity = lightsOn ? 0.8 : 1.2;
+    lighting.frontFill.intensity = lightsOn ? 2.6 : (isMobile ? 1.1 : 0.7);
+    lighting.characterLight.intensity = lightsOn ? 4.5 : (isMobile ? 1.9 : 1.5);
+    renderer.toneMappingExposure = lightsOn ? 1.38 : 1.05;
+    bloom.strength = lightsOn ? 0.1 : (isMobile ? 0.14 : 0.35);
+    scene.background = new THREE.Color(lightsOn ? 0x14263b : 0x070a12);
+    if (scene.fog instanceof THREE.Fog) scene.fog.color.setHex(lightsOn ? 0x14263b : 0x070a12);
+    const ceilingPanel = scene.userData.ceilingPanel as THREE.Mesh | undefined;
+    if (ceilingPanel && ceilingPanel.material instanceof THREE.MeshBasicMaterial) {
+      ceilingPanel.material.color.setHex(lightsOn ? 0xffe0b0 : 0x182333);
+    }
+  };
+  const onTheme = (event: Event) => {
+    const detail = (event as CustomEvent<{ theme?: string }>).detail;
+    applyLighting(detail?.theme === 'light');
+  };
+  window.addEventListener('cattery:theme', onTheme);
+  applyLighting(document.documentElement.dataset.theme === 'light');
 
   createRoom(scene);
 
@@ -726,21 +947,21 @@ export function initRoom(root: HTMLElement): void {
       tabletOpen: { fov: 62, padding: 0.35, direction: new THREE.Vector3(0, 0.24, 1), lateral: 0, vertical: -0.3 },
     },
     cat: {
-      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.18, 1), lateral: 0.71, vertical: 0 },
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.18, 1), lateral: 0.73, vertical: 0 },
       mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.3 },
       mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.95 },
       tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.15 },
       tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.8 },
     },
     pig: {
-      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(-0.5, 0.16, 1), lateral: -0.66, vertical: 0 },
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(-0.5, 0.16, 1), lateral: -0.67, vertical: 0 },
       mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.3 },
       mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.95 },
       tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.15 },
       tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.8 },
     },
     corgi: {
-      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.2, 1), lateral: 0.74, vertical: 0 },
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.2, 1), lateral: 0.78, vertical: 0 },
       mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.3 },
       mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.95 },
       tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.15 },
@@ -832,7 +1053,7 @@ export function initRoom(root: HTMLElement): void {
         x: frame.position.x,
         y: frame.position.y,
         z: frame.position.z,
-        duration: 1.1,
+        duration: 1.0,
         ease: 'power2.inOut',
         overwrite: true,
       });
@@ -840,13 +1061,13 @@ export function initRoom(root: HTMLElement): void {
         x: frame.target.x,
         y: frame.target.y,
         z: frame.target.z,
-        duration: 1.1,
+        duration: 1.0,
         ease: 'power2.inOut',
         overwrite: true,
       });
       gsap.to(camera, {
         fov: frame.fov,
-        duration: 1.1,
+        duration: 1.0,
         ease: 'power2.inOut',
         overwrite: true,
         onUpdate: () => camera.updateProjectionMatrix(),
@@ -875,7 +1096,7 @@ export function initRoom(root: HTMLElement): void {
     { passive: true },
   );
 
-  const playReaction = (kind: string) => {
+  const playReaction = (kind: CharacterKind) => {
     const character = kind === 'cat' ? cat : kind === 'pig' ? pig : corgi;
     if (!character) return;
     gsap.killTweensOf(character.scale);
@@ -893,7 +1114,7 @@ export function initRoom(root: HTMLElement): void {
 
   root.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-poke]') : null;
-    if (target?.dataset.poke) playReaction(target.dataset.poke);
+    if (target?.dataset.poke) playReaction(target.dataset.poke as CharacterKind);
   });
 
   const corgiBaseY = corgi.position.y;
@@ -925,8 +1146,18 @@ export function initRoom(root: HTMLElement): void {
       corgi.userData.parts.head.rotation.z = Math.sin(elapsed * 0.9) * 0.02;
     }
     if (dust) dust.rotation.y = elapsed * 0.012;
+    const cityRain = scene.userData.cityRain as THREE.Points | undefined;
+    if (cityRain) {
+      const positions = cityRain.geometry.getAttribute('position') as THREE.BufferAttribute;
+      for (let i = 0; i < positions.count; i += 1) {
+        let y = positions.getY(i) - 0.012;
+        if (y < 1.85) y = 3.55;
+        positions.setY(i, y);
+      }
+      positions.needsUpdate = true;
+    }
 
-    renderer.render(scene, camera);
+    composer.render();
   };
 
   const screenRect = (object: THREE.Object3D): ScreenRect => {
@@ -1004,6 +1235,7 @@ export function initRoom(root: HTMLElement): void {
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.75));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
+    composer.setSize(window.innerWidth, window.innerHeight);
     applyStation(currentStation, true);
   };
   window.addEventListener('resize', resize, { passive: true });
@@ -1013,6 +1245,7 @@ export function initRoom(root: HTMLElement): void {
     stationObserver.disconnect();
     visibilityObserver.disconnect();
     window.removeEventListener('cattery:panel-toggle', onPanelToggle);
+    window.removeEventListener('cattery:theme', onTheme);
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         object.geometry.dispose();
@@ -1020,6 +1253,7 @@ export function initRoom(root: HTMLElement): void {
         materials.forEach((material) => material.dispose());
       }
     });
+    composer.dispose();
     renderer.dispose();
   };
   window.addEventListener('pagehide', cleanup, { once: true });
@@ -1028,6 +1262,5 @@ export function initRoom(root: HTMLElement): void {
   applyStation('establishing', true);
   render();
 }
-
 
 

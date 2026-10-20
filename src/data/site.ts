@@ -11,8 +11,8 @@ export interface SiteConfig {
 export const SITE: SiteConfig = {
   title: 'cattery',
   author: '肥猫叉烧',
-  description: '肥猫叉烧的个人作品集：项目、代码仓库、笔记，以及猫、猪和柯基一起住的小房间。',
-  tagline: '猫、猪和柯基一起住的个人作品集。',
+  description: '肥猫叉烧的个人作品集：项目、代码仓库、笔记，以及猫、猪和柯基一起住的赛博电竞房。',
+  tagline: '猫、猪、柯基，和一个写代码的人。',
   giteeUrl: 'https://gitee.com/fat-cat-barbecue',
   email: 'hello@example.com',
   nav: [
@@ -22,3 +22,4 @@ export const SITE: SiteConfig = {
     { href: '/about/', label: '关于' },
   ],
 };
+
