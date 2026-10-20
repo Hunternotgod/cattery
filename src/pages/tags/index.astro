@@ -5,20 +5,19 @@ import { getAllTags, getPublishedPosts, tagHref } from '../../utils/posts';
 const posts = await getPublishedPosts();
 const tags = getAllTags(posts);
 ---
-<BaseLayout title="标签" description="按标签浏览 CatBok 的文章。">
+<BaseLayout title="标签" description="按标签浏览 cattery 的文章。">
   <div class="container">
-    <header class="page-header">
-      <p class="page-kicker">Tags</p>
+    <header class="page-head">
       <h1 class="page-title">标签</h1>
       <p class="page-description">从感兴趣的主题开始，找到相关的文章。</p>
     </header>
 
-    <section class="section" style="padding-top: 0;">
-      <div class="tag-cloud">
+    <section class="topic-index">
+      <div class="topic-grid">
         {tags.map(([tag, count]) => (
-          <a class="tag" href={tagHref(tag)}>
-            {tag}
-            <span class="tag-count">{count}</span>
+          <a class="topic-item" href={tagHref(tag)}>
+            <span class="topic-name">#{tag}</span>
+            <span class="topic-count">{String(count).padStart(2, '0')}</span>
           </a>
         ))}
       </div>

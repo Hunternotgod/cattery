@@ -5,7 +5,7 @@ import { getPublishedPosts, postHref } from '../utils/posts';
 
 export async function GET(context: APIContext) {
   const posts = await getPublishedPosts();
-  const site = context.site ?? new URL('https://catbok.example.com');
+  const site = context.site ?? new URL('https://cattery.example.com');
 
   return rss({
     title: SITE.title,
@@ -20,3 +20,4 @@ export async function GET(context: APIContext) {
     customData: `<language>zh-cn</language>`,
   });
 }
+

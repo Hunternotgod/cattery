@@ -1,8 +1,8 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
-// 部署前把 SITE_URL 改成你的正式域名，例如 https://catbok.com
-const site = process.env.SITE_URL || 'https://catbok.example.com';
+// 部署前把 SITE_URL 改成你的正式域名，例如 https://cattery.com
+const site = process.env.SITE_URL || 'https://cattery.example.com';
 
 export default defineConfig({
   site,
@@ -15,3 +15,4 @@ export default defineConfig({
     },
   },
 });
+

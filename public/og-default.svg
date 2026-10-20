@@ -1,39 +1,19 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#f7f3ec"/>
-  <circle cx="1010" cy="110" r="270" fill="#efd6c7" opacity="0.62"/>
-  <circle cx="1100" cy="590" r="210" fill="#efd6c7" opacity="0.4"/>
-  <circle cx="110" cy="560" r="120" fill="#efd6c7" opacity="0.28"/>
+  <rect width="1200" height="630" fill="#f1f2ed"/>
+  <rect x="790" width="410" height="630" fill="#2b4bff"/>
 
-  <g transform="translate(690 60) scale(1.32)">
-    <circle cx="180" cy="174" r="146" fill="#efd6c7" opacity="0.8"/>
-    <g stroke="#24201b" stroke-width="4" stroke-linejoin="round">
-      <rect x="78" y="292" width="204" height="22" rx="7" fill="#fffdf8"/>
-      <rect x="94" y="270" width="172" height="22" rx="7" fill="#efd6c7"/>
-      <path d="M118 292v-22M250 292v-22" stroke-linecap="round" opacity="0.55"/>
-    </g>
-    <path d="M238 266c48 4 66-26 44-48" stroke="#24201b" stroke-width="9" stroke-linecap="round"/>
-    <path d="M132 274c-16-34-8-70 18-88h60c26 18 34 54 18 88Z" fill="#fffdf8" stroke="#24201b" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M116 120c0-38 27-64 64-64s64 26 64 64v26c0 42-30 70-64 70s-64-28-64-70Z" fill="#fffdf8" stroke="#24201b" stroke-width="5"/>
-    <path d="M120 108 112 54l38 24" fill="#fffdf8" stroke="#24201b" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M240 108 248 54l-38 24" fill="#fffdf8" stroke="#24201b" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M126 94 122 70l20 13" fill="#efd6c7"/>
-    <path d="M234 94 238 70l-20 13" fill="#efd6c7"/>
-    <circle cx="155" cy="132" r="6" fill="#24201b"/>
-    <circle cx="205" cy="132" r="6" fill="#24201b"/>
-    <circle cx="157" cy="130" r="1.8" fill="#fffdf8"/>
-    <circle cx="207" cy="130" r="1.8" fill="#fffdf8"/>
-    <path d="M175 151h10l-5 6Z" fill="#be5a36"/>
-    <path d="M180 158c0 7-7 10-12 10M180 158c0 7 7 10 12 10" stroke="#24201b" stroke-width="3" stroke-linecap="round"/>
-    <path d="M150 154 112 146M150 162 110 164M210 154 248 146M210 162 250 164" stroke="#24201b" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
-    <ellipse cx="150" cy="274" rx="16" ry="9" fill="#fffdf8" stroke="#24201b" stroke-width="4"/>
-    <ellipse cx="210" cy="274" rx="16" ry="9" fill="#fffdf8" stroke="#24201b" stroke-width="4"/>
-    <path d="M74 120l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" fill="#be5a36" opacity="0.55"/>
-    <circle cx="294" cy="102" r="5" fill="#be5a36" opacity="0.4"/>
-    <circle cx="300" cy="214" r="3" fill="#24201b" opacity="0.28"/>
+  <text x="80" y="240" font-family="Arial, Helvetica, sans-serif" font-size="154" font-weight="700" fill="#16171a" letter-spacing="-10">cattery</text>
+  <text x="84" y="310" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="28" fill="#5d6168">code, cats, and everyday notes.</text>
+  <line x1="84" y1="358" x2="560" y2="358" stroke="#2b4bff" stroke-width="4" stroke-linecap="round"/>
+  <text x="84" y="416" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="21" fill="#686c73" letter-spacing="2">a personal archive / since 2026</text>
+
+  <g transform="translate(790 0)">
+    <path d="M18 315C62 222 348 222 392 315C348 408 62 408 18 315Z" fill="#f1f2ed"/>
+    <circle cx="205" cy="315" r="62" fill="#bdf4e4"/>
+    <ellipse cx="205" cy="315" rx="16" ry="62" fill="#16171a"/>
+    <circle cx="186" cy="286" r="10" fill="#f1f2ed" opacity="0.75"/>
+    <path d="M44 326 10 316M46 350 14 360M366 326 400 316M364 350 396 360" stroke="#16171a" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+    <path d="M392 315c20-1 30-14 24-30" stroke="#bdf4e4" stroke-width="4" stroke-linecap="round"/>
   </g>
-
-  <text x="92" y="222" font-family="Georgia, 'Times New Roman', serif" font-size="104" font-weight="700" fill="#24201b" letter-spacing="-5">CatBok</text>
-  <text x="96" y="292" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="30" fill="#62594f">Code, cats, and everyday notes.</text>
-  <line x1="96" y1="344" x2="472" y2="344" stroke="#be5a36" stroke-width="4" stroke-linecap="round"/>
-  <text x="96" y="414" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="22" fill="#8b8175" letter-spacing="4">PERSONAL BLOG · 2026</text>
 </svg>
+

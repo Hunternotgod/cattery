@@ -1,6 +1,6 @@
 ---
 import type { Post } from '../utils/posts';
-import { formatDate, postHref, readingTime, tagHref } from '../utils/posts';
+import { formatDateDot, postHref, readingTime, tagHref } from '../utils/posts';
 
 interface Props {
   post: Post;
@@ -9,18 +9,20 @@ interface Props {
 const { post, showTags = true } = Astro.props;
 const minutes = readingTime(post.body ?? '');
 ---
-<article class="post-card">
-  <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+<article class="post-row">
+  <time class="post-row-date" datetime={post.data.pubDate.toISOString()}>
+    {formatDateDot(post.data.pubDate)}
+  </time>
 
-  <div class="post-card-body">
+  <div class="post-row-main">
     <h2>
       <a href={postHref(post)}>{post.data.title}</a>
     </h2>
     <p>{post.data.description}</p>
   </div>
 
-  <div class="post-card-side">
-    <span class="reading">{minutes} 分钟阅读</span>
+  <div class="post-row-meta">
+    <span class="reading">{minutes} 分钟</span>
     {showTags && post.data.tags.length > 0 && (
       <div class="tag-row">
         {post.data.tags.map((tag) => (

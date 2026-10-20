@@ -1,105 +1,110 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PostCard from '../components/PostCard.astro';
 import { SITE } from '../consts';
-import { getAllTags, getPublishedPosts, tagHref } from '../utils/posts';
+import {
+  formatDateDot,
+  getAllTags,
+  getPublishedPosts,
+  postHref,
+  readingTime,
+  tagHref,
+} from '../utils/posts';
 
 const posts = await getPublishedPosts();
 const latest = posts.slice(0, 5);
+const lead = latest[0];
+const rest = latest.slice(1);
 const tags = getAllTags(posts);
 ---
 <BaseLayout>
   <section class="hero container">
-    <div class="hero-copy-wrap">
-      <p class="hero-eyebrow">个人博客 · 代码、猫与日常</p>
-      <h1>{SITE.title}</h1>
-      <p class="hero-copy">
-        这里记录一些写代码时想明白的事、猫踩过键盘的瞬间，以及普通日子里值得留下的片段。
-        不追热点，慢慢写，慢慢更新。
+    <div class="hero-copy">
+      <h1 class="hero-wordmark">
+        <span>{SITE.title}</span>
+        <span class="wordmark-dot" aria-hidden="true"></span>
+      </h1>
+      <p class="hero-lede">给代码、猫和日常，留一块安静的地方。</p>
+      <p class="hero-body">
+        这里记录写代码时想明白的事、猫踩过键盘的瞬间，以及普通日子里值得留下的片段。
       </p>
       <div class="hero-actions">
-        <a class="button button-primary" href="/posts/">
-          开始阅读
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </a>
-        <a class="button" href="/about/">关于这个博客</a>
+        <a class="button button-primary" href="/posts/">浏览文章</a>
+        <a class="text-link" href="/about/">关于这个站</a>
       </div>
-      <p class="hero-note">已写下 {posts.length} 篇文章 · {tags.length} 个标签</p>
     </div>
 
-    <div class="hero-art" aria-hidden="true">
-      <svg viewBox="0 0 360 360" role="img" aria-label="一只坐在书堆上的猫">
-        <circle cx="180" cy="174" r="146" fill="var(--accent-soft)" opacity="0.7" />
-
-        <g stroke="var(--text)" stroke-width="4" stroke-linejoin="round">
-          <rect x="78" y="292" width="204" height="22" rx="7" fill="var(--bg-elevated)" />
-          <rect x="94" y="270" width="172" height="22" rx="7" fill="var(--accent-soft)" />
-          <path d="M118 292v-22M250 292v-22" stroke-linecap="round" opacity="0.55" />
-        </g>
-
-        <path d="M238 266c48 4 66-26 44-48" stroke="var(--text)" stroke-width="9" stroke-linecap="round" fill="none" />
-
-        <path
-          d="M132 274c-16-34-8-70 18-88h60c26 18 34 54 18 88Z"
-          fill="var(--bg-elevated)"
-          stroke="var(--text)"
-          stroke-width="5"
-          stroke-linejoin="round"
-        />
-
-        <path
-          d="M116 120c0-38 27-64 64-64s64 26 64 64v26c0 42-30 70-64 70s-64-28-64-70Z"
-          fill="var(--bg-elevated)"
-          stroke="var(--text)"
-          stroke-width="5"
-        />
-        <path d="M120 108 112 54l38 24" fill="var(--bg-elevated)" stroke="var(--text)" stroke-width="5" stroke-linejoin="round" />
-        <path d="M240 108 248 54l-38 24" fill="var(--bg-elevated)" stroke="var(--text)" stroke-width="5" stroke-linejoin="round" />
-        <path d="M126 94 122 70l20 13" fill="var(--accent-soft)" />
-        <path d="M234 94 238 70l-20 13" fill="var(--accent-soft)" />
-
-        <circle cx="155" cy="132" r="6" fill="var(--text)" />
-        <circle cx="205" cy="132" r="6" fill="var(--text)" />
-        <circle cx="157" cy="130" r="1.8" fill="var(--bg-elevated)" />
-        <circle cx="207" cy="130" r="1.8" fill="var(--bg-elevated)" />
-
-        <path d="M175 151h10l-5 6Z" fill="var(--accent)" />
-        <path d="M180 158c0 7-7 10-12 10M180 158c0 7 7 10 12 10" stroke="var(--text)" stroke-width="3" fill="none" stroke-linecap="round" />
-        <path d="M150 154 112 146M150 162 110 164M210 154 248 146M210 162 250 164" stroke="var(--text)" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
-
-        <ellipse cx="150" cy="274" rx="16" ry="9" fill="var(--bg-elevated)" stroke="var(--text)" stroke-width="4" />
-        <ellipse cx="210" cy="274" rx="16" ry="9" fill="var(--bg-elevated)" stroke="var(--text)" stroke-width="4" />
-
-        <path d="M74 120l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" fill="var(--accent)" opacity="0.55" />
-        <circle cx="294" cy="102" r="5" fill="var(--accent)" opacity="0.4" />
-        <circle cx="300" cy="214" r="3" fill="var(--text)" opacity="0.28" />
+    <figure class="hero-visual">
+      <svg class="eye-svg" viewBox="0 0 440 300" role="img" aria-label="一只猫的眼睛">
+        <path d="M18 150C82 42 358 42 422 150C358 258 82 258 18 150Z" fill="var(--mint)" />
+        <circle cx="220" cy="150" r="82" fill="var(--cobalt)" />
+        <ellipse cx="220" cy="150" rx="21" ry="82" fill="var(--ink)" />
+        <circle cx="197" cy="116" r="14" fill="var(--paper)" opacity="0.55" />
+        <path d="M422 150c20-1 30-14 24-30" stroke="var(--cobalt)" stroke-width="3" stroke-linecap="round" fill="none" />
+        <path d="M54 158 18 148M56 182 24 192M386 158 422 148M384 182 416 192" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" opacity="0.8" />
       </svg>
-    </div>
+      <figcaption class="hero-figcaption">a personal archive<br />since 2026</figcaption>
+    </figure>
   </section>
 
-  <section class="section container">
+  {lead && (
+    <div class="container hero-latest">
+      <span class="hero-latest-label">最新</span>
+      <a href={postHref(lead)}>{lead.data.title}</a>
+      <time datetime={lead.data.pubDate.toISOString()}>{formatDateDot(lead.data.pubDate)}</time>
+    </div>
+  )}
+
+  <section class="home-feature container">
     <div class="section-head">
-      <h2 class="section-title">最近更新</h2>
-      <a class="section-link" href="/posts/">全部文章 →</a>
+      <h2 class="section-title">最近写下的</h2>
+      <a class="text-link" href="/posts/">全部文章</a>
     </div>
-    <div class="post-list">
-      {latest.map((post) => <PostCard post={post} />)}
-    </div>
+
+    {lead ? (
+      <div class="feature-grid">
+        <article class="feature-post">
+          <div class="feature-meta">
+            <time datetime={lead.data.pubDate.toISOString()}>{formatDateDot(lead.data.pubDate)}</time>
+            <span>{readingTime(lead.body ?? '')} 分钟阅读</span>
+          </div>
+          <h3 class="feature-title">
+            <a href={postHref(lead)}>{lead.data.title}</a>
+          </h3>
+          <p class="feature-description">{lead.data.description}</p>
+          {lead.data.tags.length > 0 && (
+            <div class="tag-row">
+              {lead.data.tags.map((tag) => (
+                <a class="tag" href={tagHref(tag)}>{tag}</a>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <div class="feature-index">
+          {rest.map((post) => (
+            <a class="index-row" href={postHref(post)}>
+              <time datetime={post.data.pubDate.toISOString()}>{formatDateDot(post.data.pubDate)}</time>
+              <span>{post.data.title}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <p class="feature-description" style="padding-top: 24px;">还没有文章，先写下第一篇吧。</p>
+    )}
   </section>
 
   {tags.length > 0 && (
-    <section class="section container">
+    <section class="topic-index container">
       <div class="section-head">
-        <h2 class="section-title">随便看看</h2>
-        <a class="section-link" href="/tags/">全部标签 →</a>
+        <h2 class="section-title">按主题</h2>
+        <a class="text-link" href="/tags/">全部标签</a>
       </div>
-      <div class="tag-cloud">
-        {tags.slice(0, 10).map(([tag, count]) => (
-          <a class="tag" href={tagHref(tag)}>
-            {tag}
-            <span class="tag-count">{count}</span>
+      <div class="topic-grid">
+        {tags.map(([tag, count]) => (
+          <a class="topic-item" href={tagHref(tag)}>
+            <span class="topic-name">#{tag}</span>
+            <span class="topic-count">{String(count).padStart(2, '0')}</span>
           </a>
         ))}
       </div>

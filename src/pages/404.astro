@@ -1,19 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CatMark from '../components/CatMark.astro';
 ---
 <BaseLayout title="页面不存在" description="这个页面好像被猫叼走了。">
   <div class="container not-found">
     <div>
-      <svg class="not-found-art" viewBox="0 0 240 180" fill="none" aria-hidden="true">
-        <path d="M58 150h124" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.25" />
-        <path d="M78 86V52l24 16h36l24-16v34c0 34-18 56-42 56S78 120 78 86Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-        <path d="M104 90h.01M136 90h.01" stroke="currentColor" stroke-width="6" stroke-linecap="round" />
-        <path d="m120 102 4 4h-8l4-4Z" fill="currentColor" />
-        <path d="M86 108 70 104M88 115l-16 4M154 108l16-4M152 115l16 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-        <path d="M60 36c8 0 12 4 12 12M180 36c-8 0-12 4-12 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.45" />
-      </svg>
-      <h1>这一页被猫叼走了</h1>
-      <p>你访问的页面不存在，或者已经被移动到别的地方。</p>
+      <CatMark class="not-found-mark" />
+      <p class="not-found-code">404</p>
+      <h1>这里没有猫</h1>
+      <p>你访问的页面不存在，或者已经被挪到了别处。</p>
       <a class="button button-primary" href="/">回到首页</a>
     </div>
   </div>

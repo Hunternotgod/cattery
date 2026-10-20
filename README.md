@@ -1,6 +1,8 @@
-# CatBok
+# cattery
 
 一个面向国内读者的 Astro 静态个人博客。
+
+视觉方向见 [DESIGN.md](DESIGN.md)：冷纸色、钴蓝、薄荷，以及一个几何猫眼标记。
 
 ## 环境
 
@@ -65,3 +67,5 @@ draft: false              # true 则不会出现在站点、RSS 和 sitemap 中
 没有域名时，可以先用 EdgeOne Pages 提供的默认域名预览。
 
 > 部署前务必设置 `SITE_URL`，否则 canonical、RSS、sitemap 和分享卡片里仍然是示例域名。
+
+

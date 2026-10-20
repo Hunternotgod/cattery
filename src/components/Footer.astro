@@ -1,15 +1,35 @@
 ---
 import { SITE } from '../consts';
+import CatMark from './CatMark.astro';
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer">
-  <div class="container footer-inner">
-    <p>© {year} {SITE.title} · 记录代码、猫与日常</p>
-    <div class="footer-links">
-      <a href="/rss.xml">RSS</a>
-      <a href="/search/">搜索</a>
-      <a href="/about/">关于</a>
-      <a href="#main">回到顶部</a>
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="/" aria-label={`${SITE.title} 首页`}>
+        <CatMark class="brand-mark" />
+        <span class="brand-name">{SITE.title}</span>
+      </a>
+      <p>记录代码、猫与日常。</p>
     </div>
+
+    <nav class="footer-nav" aria-label="页脚导航">
+      <a href="/posts/">文章</a>
+      <a href="/tags/">标签</a>
+      <a href="/archive/">归档</a>
+      <a href="/about/">关于</a>
+      <a href="/search/">搜索</a>
+      <a href="#main">回到顶部</a>
+    </nav>
+
+    <div class="footer-subscribe">
+      <p>订阅更新</p>
+      <a class="footer-rss" href="/rss.xml">RSS feed</a>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <p>© {year} {SITE.title}</p>
+    <p>Astro + Markdown + Pagefind</p>
   </div>
 </footer>

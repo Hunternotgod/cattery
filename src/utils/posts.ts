@@ -30,6 +30,28 @@ export function formatMonthDay(date: Date): string {
   }).format(date);
 }
 
+export function formatDateDot(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('year')}.${get('month')}.${get('day')}`;
+}
+
+export function formatMonthDayDot(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('month')}.${get('day')}`;
+}
 export function readingTime(body: string): number {
   const plain = body
     .replace(/```[\s\S]*?```/g, ' ')
@@ -61,3 +83,4 @@ export function tagHref(tag: string): string {
 export function postHref(post: Post): string {
   return `/posts/${post.id}/`;
 }
+

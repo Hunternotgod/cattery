@@ -2,14 +2,13 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 const isProd = import.meta.env.PROD;
 ---
-<BaseLayout title="搜索" description="搜索 CatBok 的文章。">
+<BaseLayout title="搜索" description="搜索 cattery 的文章。">
   <Fragment slot="head">
     {isProd && <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />}
   </Fragment>
 
   <div class="container">
-    <header class="page-header">
-      <p class="page-kicker">Search</p>
+    <header class="page-head">
       <h1 class="page-title">搜索</h1>
       <p class="page-description">输入关键词，查找文章标题和正文中的内容。</p>
     </header>

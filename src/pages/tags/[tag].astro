@@ -23,18 +23,15 @@ interface Props {
 
 const { tag, posts } = Astro.props as Props;
 ---
-<BaseLayout title={`标签：${tag}`} description={`CatBok 中所有带有「${tag}」标签的文章。`}>
+<BaseLayout title={`标签：${tag}`} description={`cattery 中所有带有「${tag}」标签的文章。`}>
   <div class="container">
-    <header class="page-header">
-      <p class="page-kicker">Tag</p>
+    <header class="page-head">
       <h1 class="page-title">#{tag}</h1>
       <p class="page-description">共 {posts.length} 篇文章。</p>
     </header>
 
-    <section class="section" style="padding-top: 0;">
-      <div class="post-list">
-        {posts.map((post) => <PostCard post={post} showTags={false} />)}
-      </div>
+    <section class="post-index">
+      {posts.map((post) => <PostCard post={post} showTags={false} />)}
     </section>
   </div>
 </BaseLayout>

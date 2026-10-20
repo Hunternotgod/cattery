@@ -2,7 +2,7 @@
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
-  formatDate,
+  formatDateDot,
   getPublishedPosts,
   postHref,
   readingTime,
@@ -33,7 +33,7 @@ const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 const minutes = readingTime(post.body ?? '');
-const base = Astro.site ?? new URL('https://catbok.example.com');
+const base = Astro.site ?? new URL('https://cattery.example.com');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -44,7 +44,7 @@ const jsonLd = {
   dateModified: (post.data.updatedDate ?? post.data.pubDate).toISOString(),
   author: {
     '@type': 'Person',
-    name: 'CatBok',
+    name: 'cattery',
   },
   mainEntityOfPage: new URL(postHref(post), base).toString(),
   image: new URL('/og-default.png', base).toString(),
@@ -62,14 +62,8 @@ const jsonLd = {
     <article data-pagefind-body>
       <header class="article-header">
         <div class="article-meta">
-          <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
-          {post.data.updatedDate && (
-            <>
-              <span class="dot"></span>
-              <span>更新于 {formatDate(post.data.updatedDate)}</span>
-            </>
-          )}
-          <span class="dot"></span>
+          <time datetime={post.data.pubDate.toISOString()}>{formatDateDot(post.data.pubDate)}</time>
+          {post.data.updatedDate && <span>更新于 {formatDateDot(post.data.updatedDate)}</span>}
           <span>{minutes} 分钟阅读</span>
         </div>
 
@@ -83,8 +77,6 @@ const jsonLd = {
             ))}
           </div>
         )}
-
-        <hr class="article-rule" />
       </header>
 
       <div class="prose">
@@ -92,7 +84,7 @@ const jsonLd = {
       </div>
 
       <footer class="article-footer" data-pagefind-ignore>
-        <a class="back-link" href="/posts/">← 返回文章列表</a>
+        <a class="back-link" href="/posts/">返回文章列表</a>
         <a class="back-link" href="/archive/">查看归档</a>
       </footer>
 
@@ -104,15 +96,15 @@ const jsonLd = {
               <strong>{older.data.title}</strong>
             </a>
           ) : (
-            <span></span>
+            <div></div>
           )}
           {newer ? (
-            <a class="next" href={postHref(newer)}>
+            <a href={postHref(newer)}>
               <span>更新一篇</span>
               <strong>{newer.data.title}</strong>
             </a>
           ) : (
-            <span></span>
+            <div></div>
           )}
         </nav>
       )}
@@ -132,4 +124,3 @@ const jsonLd = {
     )}
   </div>
 </BaseLayout>
-
