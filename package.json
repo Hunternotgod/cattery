@@ -1,0 +1,28 @@
+{
+  "name": "catbok",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^5.18.2",
+    "pagefind": "^1.5.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.4",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@astrojs/language-server": "2.15.4"
+  },
+  "engines": {
+    "node": ">=22.11.0"
+  }
+}

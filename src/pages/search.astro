@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+const isProd = import.meta.env.PROD;
+---
+<BaseLayout title="搜索" description="搜索 CatBok 的文章。">
+  <Fragment slot="head">
+    {isProd && <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />}
+  </Fragment>
+
+  <div class="container">
+    <header class="page-header">
+      <p class="page-kicker">Search</p>
+      <h1 class="page-title">搜索</h1>
+      <p class="page-description">输入关键词，查找文章标题和正文中的内容。</p>
+    </header>
+
+    <section class="search-wrap">
+      <div class="search-shell">
+        {isProd ? (
+          <div id="search"></div>
+        ) : (
+          <p class="search-fallback">
+            搜索索引在构建后生成。<br />
+            运行 <code>npm run build</code>，再用 <code>npm run preview</code> 查看。
+          </p>
+        )}
+      </div>
+    </section>
+  </div>
+
+  {isProd && (
+    <>
+      <script is:inline src="/pagefind/pagefind-ui.js"></script>
+      <script is:inline>
+        window.addEventListener('DOMContentLoaded', () => {
+          if (window.PagefindUI) {
+            new window.PagefindUI({
+              element: '#search',
+              showSubResults: true,
+              translations: {
+                placeholder: '搜索文章…',
+                clear_search: '清空',
+                load_more: '加载更多',
+                search_label: '搜索本站',
+                filters_label: '筛选',
+                zero_results: '没有找到与 [SEARCH_TERM] 相关的内容',
+                many_results: '找到 [COUNT] 条与 [SEARCH_TERM] 相关的结果',
+                one_result: '找到 1 条与 [SEARCH_TERM] 相关的结果',
+                alt_search: '没有找到与 [SEARCH_TERM] 相关的内容，改为显示 [DIFFERENT_TERM] 的结果',
+                search_suggestion: '没有找到与 [SEARCH_TERM] 相关的内容，试试这些搜索：',
+                searching: '正在搜索 [SEARCH_TERM]…',
+              },
+            });
+          }
+        });
+      </script>
+    </>
+  )}
+</BaseLayout>

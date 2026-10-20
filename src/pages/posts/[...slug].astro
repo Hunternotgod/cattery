@@ -1,0 +1,135 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  formatDate,
+  getPublishedPosts,
+  postHref,
+  readingTime,
+  tagHref,
+  type Post,
+} from '../../utils/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+
+  return posts.map((post, index) => ({
+    params: { slug: post.id },
+    props: {
+      post,
+      newer: posts[index - 1] ?? null,
+      older: posts[index + 1] ?? null,
+    },
+  }));
+}
+
+interface Props {
+  post: Post;
+  newer: Post | null;
+  older: Post | null;
+}
+
+const { post, newer, older } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const minutes = readingTime(post.body ?? '');
+const base = Astro.site ?? new URL('https://catbok.example.com');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.pubDate.toISOString(),
+  dateModified: (post.data.updatedDate ?? post.data.pubDate).toISOString(),
+  author: {
+    '@type': 'Person',
+    name: 'CatBok',
+  },
+  mainEntityOfPage: new URL(postHref(post), base).toString(),
+  image: new URL('/og-default.png', base).toString(),
+};
+---
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  article
+  publishedTime={post.data.pubDate.toISOString()}
+  modifiedTime={(post.data.updatedDate ?? post.data.pubDate).toISOString()}
+  jsonLd={jsonLd}
+>
+  <div class="container article-layout">
+    <article data-pagefind-body>
+      <header class="article-header">
+        <div class="article-meta">
+          <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+          {post.data.updatedDate && (
+            <>
+              <span class="dot"></span>
+              <span>更新于 {formatDate(post.data.updatedDate)}</span>
+            </>
+          )}
+          <span class="dot"></span>
+          <span>{minutes} 分钟阅读</span>
+        </div>
+
+        <h1 class="article-title" data-pagefind-meta="title">{post.data.title}</h1>
+        <p class="article-description">{post.data.description}</p>
+
+        {post.data.tags.length > 0 && (
+          <div class="tag-row article-tags">
+            {post.data.tags.map((tag) => (
+              <a class="tag" href={tagHref(tag)}>{tag}</a>
+            ))}
+          </div>
+        )}
+
+        <hr class="article-rule" />
+      </header>
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <footer class="article-footer" data-pagefind-ignore>
+        <a class="back-link" href="/posts/">← 返回文章列表</a>
+        <a class="back-link" href="/archive/">查看归档</a>
+      </footer>
+
+      {(newer || older) && (
+        <nav class="post-nav" aria-label="文章导航" data-pagefind-ignore>
+          {older ? (
+            <a href={postHref(older)}>
+              <span>更早一篇</span>
+              <strong>{older.data.title}</strong>
+            </a>
+          ) : (
+            <span></span>
+          )}
+          {newer ? (
+            <a class="next" href={postHref(newer)}>
+              <span>更新一篇</span>
+              <strong>{newer.data.title}</strong>
+            </a>
+          ) : (
+            <span></span>
+          )}
+        </nav>
+      )}
+    </article>
+
+    {toc.length > 1 && (
+      <aside class="toc" aria-label="文章目录">
+        <p class="toc-title">目录</p>
+        <ul>
+          {toc.map((heading) => (
+            <li class={`depth-${heading.depth}`}>
+              <a href={`#${heading.slug}`}>{heading.text}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+  </div>
+</BaseLayout>
+

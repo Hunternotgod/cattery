@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="关于" description="关于 CatBok 和这个博客背后的人。">
+  <div class="container">
+    <header class="page-header">
+      <p class="page-kicker">About</p>
+      <h1 class="page-title">关于</h1>
+      <p class="page-description">一个普通人的个人博客，记录代码、阅读、猫和日常生活。</p>
+    </header>
+
+    <div class="about-grid">
+      <article class="prose">
+        <h2>关于这个博客</h2>
+        <p>
+          CatBok 是我给自己留的一块安静地方。这里没有推荐算法，也没有必须追上的热点，
+          只有一些想认真写下来的东西。
+        </p>
+        <p>
+          博客用 Astro 构建，文章是 Markdown 文件，部署在静态托管上。
+          这样做的好处是简单、快、可迁移：即使以后换框架，文字仍然属于自己。
+        </p>
+
+        <h2>关于我</h2>
+        <p>
+          一个喜欢写代码、也喜欢猫的人。平时会折腾一些工具和小项目，
+          偶尔读书、拍照、散步，然后试着把过程中的想法整理成文字。
+        </p>
+        <p>
+          如果你也在做类似的事情，欢迎通过下面的方式找到我。
+        </p>
+
+        <h2>联系</h2>
+        <p>
+          邮箱：<span>待填写</span>
+          <br />
+          GitHub：<span>待填写</span>
+        </p>
+
+        <blockquote>
+          <p>写作不是为了被看见，而是为了把模糊的想法变清楚。</p>
+        </blockquote>
+      </article>
+
+      <aside class="about-card">
+        <h2>这个站</h2>
+        <ul>
+          <li>Astro + Markdown</li>
+          <li>静态部署，无数据库</li>
+          <li>Pagefind 站内搜索</li>
+          <li>支持深色模式</li>
+          <li>RSS 订阅</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
