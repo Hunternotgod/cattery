@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Mascot from '../../components/Mascot.astro';
+import Portrait from '../../components/Portrait.astro';
 import { SITE } from '../../data/site';
 import { REPO_SNAPSHOT, formatRepoDate } from '../../data/repos';
+import { PROJECT_STATUS_META } from '../../data/projects';
+import ContributionHeatmap from '../../components/ContributionHeatmap.astro';
 
 const projects = (await getCollection('projects', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order,
@@ -29,7 +31,10 @@ const synced = REPO_SNAPSHOT.syncedAt ? formatRepoDate(REPO_SNAPSHOT.syncedAt) :
           )}
           <div class="project-feature-body">
             <p class="section-kicker">featured project</p>
-            <h2><a href={`/projects/${project.id}/`}>{project.data.title}</a></h2>
+            <div class="project-title-row">
+              <h2><a href={`/projects/${project.id}/`}>{project.data.title}</a></h2>
+              <span class:list={['project-status', `status-${project.data.status}`]} title={PROJECT_STATUS_META[project.data.status].description}>{PROJECT_STATUS_META[project.data.status].label}</span>
+            </div>
             <p class="project-subtitle">{project.data.subtitle}</p>
             <p>{project.data.summary}</p>
             <div class="stack-row">
@@ -42,7 +47,7 @@ const synced = REPO_SNAPSHOT.syncedAt ? formatRepoDate(REPO_SNAPSHOT.syncedAt) :
               )}
             </div>
           </div>
-          <Mascot kind="cat" class="project-feature-mascot" />
+          <Portrait kind="cat" class="project-feature-mascot" />
         </article>
       ))}
     </section>
@@ -72,6 +77,7 @@ const synced = REPO_SNAPSHOT.syncedAt ? formatRepoDate(REPO_SNAPSHOT.syncedAt) :
         ))}
       </div>
       {synced && <p class="section-footnote">仓库数据更新于 {synced}</p>}
+      <ContributionHeatmap variant="full" class="repo-contributions" />
     </section>
   </div>
 </BaseLayout>

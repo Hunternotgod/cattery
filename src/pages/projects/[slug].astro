@@ -1,9 +1,10 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Mascot from '../../components/Mascot.astro';
+import Portrait from '../../components/Portrait.astro';
 import DownloadButton from '../../components/DownloadButton.astro';
 import { SITE } from '../../data/site';
+import { PROJECT_STATUS_META } from '../../data/projects';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects', ({ data }) => !data.draft);
@@ -50,12 +51,14 @@ const jsonLd = {
       <div class="project-hero-copy">
         <p class="section-kicker">project / {data.year}</p>
         <h1 class="project-title" data-pagefind-meta="title">{data.title}</h1>
+        <span class:list={['project-status', `status-${data.status}`]} title={PROJECT_STATUS_META[data.status].description}>{PROJECT_STATUS_META[data.status].label}</span>
         <p class="project-subtitle">{data.subtitle}</p>
         <p class="project-summary">{data.summary}</p>
 
         <dl class="project-meta-table">
           <div><dt>角色</dt><dd>{data.role}</dd></div>
           <div><dt>技术</dt><dd>{data.stack.slice(0, 4).join(' · ')}</dd></div>
+          <div><dt>状态</dt><dd>{PROJECT_STATUS_META[data.status].label} · {PROJECT_STATUS_META[data.status].description}</dd></div>
         </dl>
 
         <div class="project-actions" data-pagefind-ignore>
@@ -68,7 +71,7 @@ const jsonLd = {
 
       <div class="project-hero-art">
         {data.cover && <img src={data.cover} alt={`${data.title} 界面预览`} />}
-        <Mascot kind="cat" class="project-hero-mascot" />
+        <Portrait kind="cat" class="project-hero-mascot" />
         <p class="project-art-note">猫工程师在调试今天的版本。</p>
       </div>
     </header>

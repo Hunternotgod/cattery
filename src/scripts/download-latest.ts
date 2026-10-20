@@ -81,20 +81,6 @@ async function init() {
     });
   }
 
-  try {
-    const latest = await getLatestRelease();
-    for (const link of links) {
-      link.href = latest.url;
-      link.dataset.ready = 'true';
-      setLabel(link, `下载 Windows 版 ${latest.tag}`);
-      setStatus(link, `最新版本 ${latest.tag}`);
-    }
-  } catch {
-    for (const link of links) {
-      setLabel(link, '下载上次同步版本');
-      setStatus(link, '暂时无法检查最新版，已使用同步安装包');
-    }
-  }
 }
 
 if (document.readyState === 'loading') {

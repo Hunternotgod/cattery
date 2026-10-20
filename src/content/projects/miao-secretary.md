@@ -4,6 +4,7 @@ subtitle: "把群消息整理成一份能看的日报"
 summary: "一款 Windows 桌面应用，把 PC 微信群里的通知、待办和关键信息整理成结构化日报。"
 role: "独立开发 · 产品设计 · 前端与桌面端"
 year: "2024 — 2026"
+status: "maintained"
 stack:
   - "Tauri 2"
   - "Rust"

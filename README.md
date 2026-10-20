@@ -11,7 +11,7 @@
 - 程序化角色与赛博电竞房
 - Markdown 笔记与项目内容
 - Pagefind 站内搜索
-- Gitee 仓库与 release 数据同步
+- Gitee 仓库、release 与贡献热力图数据同步
 - EdgeOne Pages 静态部署
 
 ## 本地运行
@@ -43,6 +43,7 @@ npm run check
 - 站点信息：`src/data/site.ts`
 - Gitee 仓库快照：`src/data/gitee-repos.json`
 - 喵秘书 release 快照：`src/data/miao-secretary-release.json`
+- Gitee 贡献热力图快照：`src/data/gitee-contributions.json`
 - 3D 首页：`src/pages/index.astro` + `src/scripts/room.ts`
 - 全局样式与设计 token：`src/styles/global.css`
 
@@ -67,6 +68,7 @@ npm run content:sync
 
 - `repos:sync` 更新仓库书架快照。
 - `release:sync` 获取喵秘书最新 release 和 Windows `.exe` 下载地址。
+- `contributions:sync` 抓取 Gitee 公开主页最近 365 天的贡献数据。
 - 下载按钮会优先实时请求 Gitee latest release；请求失败时回退到同步直链。
 
 需要更高 API 限额时可以设置：
@@ -76,6 +78,17 @@ $env:GITEE_TOKEN="你的 token"
 npm run repos:sync
 ```
 
+### 每日自动更新（不需要后端）
+
+GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync`，更新静态 JSON 快照；只有文件发生变化时才提交，EdgeOne Pages 随后按 Git 集成重新构建。
+
+需要在 GitHub 仓库中配置：
+
+- Secret `GITEE_TOKEN`：可选，用于提高 Gitee API 限额。
+- EdgeOne Pages 连接该 GitHub 仓库，并启用推送自动部署。
+
+这个流程没有常驻服务器、数据库或运行时 API。
+
 ## 3D 与灯光
 
 - 全站默认深色霓虹模式；浅色模式代表“开灯”，主题开关同时控制 2D UI 和 3D 灯光。
@@ -83,7 +96,8 @@ npm run repos:sync
 - 手机/平板底部面板默认收起，展开后镜头会为面板让出安全区。
 - 开启“减少动态效果”时切换为静态海报和普通长页面。
 - WebGL 不可用时同样回退静态海报。
-- 海报：`public/images/room-poster.webp`
+- 海报：`public/images/room-poster.webp` 与 `public/images/room-poster-lit.webp`
+- 三只角色支持悬停、点击和横向拖拽；随机台词约每 22–38 秒出现一次。
 
 ## 角色与 Tripo
 

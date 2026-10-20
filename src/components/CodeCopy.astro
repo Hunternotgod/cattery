@@ -1,0 +1,51 @@
+---
+---
+<script>
+  const fallbackCopy = (text: string) => {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const execCommand = (document as unknown as { execCommand?: (command: string) => boolean }).execCommand;
+    const copied = execCommand?.('copy') ?? false;
+    area.remove();
+    return copied;
+  };
+
+  const copyText = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+    }
+    return fallbackCopy(text);
+  };
+
+  for (const pre of document.querySelectorAll<HTMLPreElement>('.prose pre')) {
+    if (pre.closest('.code-block-shell')) continue;
+    const code = pre.querySelector('code')?.textContent ?? pre.textContent ?? '';
+    const shell = document.createElement('div');
+    shell.className = 'code-block-shell';
+    pre.parentNode?.insertBefore(shell, pre);
+    shell.appendChild(pre);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'code-copy-button';
+    button.textContent = '复制';
+    button.setAttribute('aria-label', '复制代码');
+    shell.appendChild(button);
+    button.addEventListener('click', async () => {
+      const copied = await copyText(code);
+      button.textContent = copied ? '已复制' : '复制失败';
+      button.classList.toggle('is-copied', copied);
+      window.setTimeout(() => {
+        button.textContent = '复制';
+        button.classList.remove('is-copied');
+      }, 1600);
+    });
+  }
+</script>

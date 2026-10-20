@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Mascot from '../../components/Mascot.astro';
+import Portrait from '../../components/Portrait.astro';
 import { SITE } from '../../data/site';
 import {
   formatDateDot,
@@ -87,7 +87,7 @@ const jsonLd = {
 
       <footer class="article-footer" data-pagefind-ignore>
         <a class="back-link" href="/notes/">返回笔记列表</a>
-        <Mascot kind="corgi" class="article-corgi" />
+        <Portrait kind="corgi" class="article-corgi" />
         <a class="back-link" href="/archive/">查看归档</a>
       </footer>
 

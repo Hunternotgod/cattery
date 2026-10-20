@@ -29,8 +29,70 @@ const C = {
   dark: 0x05070c,
 };
 
-type Character = THREE.Group & {
-  userData: { parts: Record<string, THREE.Object3D> };
+export type Character = THREE.Group & {
+  userData: { parts: Record<string, THREE.Object3D>; kind?: CharacterKind };
+};
+
+type RoomRole = 'wall' | 'wallSide' | 'floor' | 'wood' | 'woodDark' | 'rug' | 'rugInner' | 'accent' | 'accentAlt' | 'propCream';
+
+const CHARACTER_LINES: Record<CharacterKind, string[]> = {
+  cat: [
+    '这个 Bug 不是我写的，是昨天的我写的。',
+    '再给我五分钟，我把日志看完。',
+    '上线前先深呼吸，然后提交。',
+    '键盘声音再大一点，问题就会怕。',
+    '我不是在摸鱼，我在等待构建。',
+    '耳机里没有音乐，只有风扇声。',
+  ],
+  pig: [
+    '这个需求可以上线，但得先加个开关。',
+    '我看过了，整体没问题，除了所有问题。',
+    '仓库不是仓库，是团队的记忆。',
+    '先别加功能，把 README 写明白。',
+    '这个排期……我们再同步一下。',
+    '可以，但不要今晚发版。',
+  ],
+  corgi: [
+    '你的待办清单我刚才踩乱了。',
+    '这个链接看起来能吃。',
+    '我没有撞翻纸堆，是纸堆先动的手。',
+    '再点一下，我可能会跑得更快。',
+    '笔记写完了吗？我叼走了一页。',
+    '柯基不负责 Bug，只负责热闹。',
+  ],
+};
+
+const CHARACTER_NAMES: Record<CharacterKind, string> = {
+  cat: '猫工程师',
+  pig: '猪老板',
+  corgi: '柯基捣蛋鬼',
+};
+
+const ROOM_PALETTES: Record<'night' | 'lightsOn', Record<RoomRole, number>> = {
+  night: {
+    wall: 0x0b111b,
+    wallSide: 0x080d16,
+    floor: 0x111927,
+    wood: 0x1b2634,
+    woodDark: 0x0d141f,
+    rug: 0x331520,
+    rugInner: 0x111822,
+    accent: 0x4debff,
+    accentAlt: 0xff4fa3,
+    propCream: 0x8b806f,
+  },
+  lightsOn: {
+    wall: 0x756e64,
+    wallSide: 0x5f5950,
+    floor: 0x4d392c,
+    wood: 0x715239,
+    woodDark: 0x3f2b21,
+    rug: 0x7a4638,
+    rugInner: 0x5e574d,
+    accent: 0xc89b62,
+    accentAlt: 0xb7654d,
+    propCream: 0xd7c4a8,
+  },
 };
 
 type StationId = 'establishing' | 'cat' | 'pig' | 'corgi' | 'about';
@@ -60,6 +122,17 @@ interface ScreenRect {
   height: number;
 }
 
+interface CharacterControlState {
+  object: Character;
+  basePosition: THREE.Vector3;
+  baseRotation: THREE.Euler;
+  baseScale: THREE.Vector3;
+  dragging: boolean;
+  reactionCount: number;
+  reaction: gsap.core.Timeline | null;
+  returnTween: gsap.core.Tween | null;
+}
+
 const gradientMap = (() => {
   const data = new Uint8Array([64, 132, 210, 255]);
   const texture = new THREE.DataTexture(data, data.length, 1, THREE.RedFormat);
@@ -77,6 +150,30 @@ function toon(color: number): THREE.MeshToonMaterial {
   const material = new THREE.MeshToonMaterial({ color, gradientMap });
   materialCache.set(color, material);
   return material;
+}
+
+const characterMaterialCache = new Map<number, THREE.MeshStandardMaterial>();
+function characterMaterial(color: number): THREE.MeshStandardMaterial {
+  const cached = characterMaterialCache.get(color);
+  if (cached) return cached;
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.82,
+    metalness: 0,
+    emissive: new THREE.Color(color).multiplyScalar(0.035),
+  });
+  characterMaterialCache.set(color, material);
+  return material;
+}
+
+function finishCharacter(group: Character, kind: CharacterKind): Character {
+  group.userData.kind = kind;
+  group.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = false;
+    object.receiveShadow = false;
+  });
+  return group;
 }
 
 function addMesh(
@@ -111,7 +208,7 @@ function place(
   parent.add(mesh);
   return mesh;
 }
-function snapToSurface(object: THREE.Object3D, surfaceY: number): void {
+export function snapToSurface(object: THREE.Object3D, surfaceY: number): void {
   object.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(object);
   object.position.y += surfaceY - bounds.min.y;
@@ -166,42 +263,48 @@ function signTexture(): THREE.CanvasTexture {
   });
 }
 
-function cyberWindowTexture(): THREE.CanvasTexture {
+function cyberWindowTexture(lightsOn = false): THREE.CanvasTexture {
   return makeTexture(1024, 640, (ctx) => {
-    const sky = ctx.createLinearGradient(0, 0, 0, 640);
-    sky.addColorStop(0, '#060916');
-    sky.addColorStop(0.55, '#142447');
-    sky.addColorStop(1, '#07141f');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, 1024, 640);
-    const colors = ['#4debff', '#ff3ea5', '#8d6bff', '#ff9a3d'];
+    const bands = lightsOn
+      ? ['#4a4540', '#5a4d43', '#69584b', '#786354', '#3b3834']
+      : ['#050810', '#091224', '#101b32', '#17233b', '#08101c'];
+    const bandHeight = 640 / bands.length;
+    bands.forEach((color, index) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, index * bandHeight, 1024, bandHeight + 1);
+    });
+
+    const colors = lightsOn
+      ? ['#c8884d', '#87a9a5', '#b86b55', '#d6b178']
+      : ['#4debff', '#ff3ea5', '#8d6bff', '#ff9a3d'];
     for (let i = 0; i < 28; i += 1) {
       const w = 22 + ((i * 37) % 52);
       const h = 100 + ((i * 73) % 260);
       const x = (i * 79) % 990;
       const y = 250 - h;
-      ctx.fillStyle = i % 3 === 0 ? '#0b1725' : '#101d30';
+      ctx.fillStyle = lightsOn ? (i % 3 === 0 ? '#494640' : '#3d3b38') : (i % 3 === 0 ? '#0b1725' : '#101d30');
       ctx.fillRect(x, y, w, h);
       ctx.fillStyle = colors[i % colors.length];
       for (let j = 0; j < 8; j += 1) {
         if ((i + j * 3) % 4 === 0) continue;
-        ctx.globalAlpha = 0.55 + (j % 3) * 0.15;
+        ctx.globalAlpha = lightsOn ? 0.35 + (j % 3) * 0.08 : 0.55 + (j % 3) * 0.15;
         ctx.fillRect(x + 5 + (j % 3) * 9, y + 12 + Math.floor(j / 3) * 17, 3, 7);
       }
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = '#07101a';
+
+    ctx.fillStyle = lightsOn ? '#272827' : '#07101a';
     ctx.fillRect(0, 420, 1024, 220);
     for (let i = 0; i < 24; i += 1) {
       const x = (i * 47) % 1024;
       const w = 3 + (i % 5);
       const h = 30 + (i * 11) % 80;
       ctx.fillStyle = colors[i % colors.length];
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = lightsOn ? 0.16 : 0.35;
       ctx.fillRect(x, 440 + (i % 6) * 18, w, h);
     }
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = 'rgba(77,235,255,.35)';
+    ctx.strokeStyle = lightsOn ? 'rgba(224,162,90,.28)' : 'rgba(77,235,255,.35)';
     ctx.lineWidth = 2;
     for (let i = 0; i < 26; i += 1) {
       const x = (i * 101) % 1024;
@@ -282,50 +385,67 @@ function artTexture(variant: number): THREE.CanvasTexture {
     ctx.fillText('NEON ROOM / 2026', 82, 104);
   });
 }
-function createCat(): Character {
+export function createCat(): Character {
   const group = new THREE.Group() as Character;
-  const orange = toon(C.cat);
-  const orangeDark = toon(C.catDark);
-  const cream = toon(C.cream);
-  const ink = toon(C.ink);
-  const pink = toon(0xef7890);
+  const orange = characterMaterial(C.cat);
+  const orangeDark = characterMaterial(C.catDark);
+  const cream = characterMaterial(C.cream);
+  const ink = characterMaterial(C.ink);
+  const pink = characterMaterial(0xef7890);
+  const lens = new THREE.MeshBasicMaterial({ color: 0x83ecf2, transparent: true, opacity: 0.34, depthWrite: false });
 
-  addMesh(group, new THREE.CapsuleGeometry(0.38, 0.42, 8, 16), orange, [0, 0.62, 0], [0, 0, 0], [1, 1, 0.9]);
-  addMesh(group, new THREE.SphereGeometry(0.24, 24, 16), cream, [0, 0.62, 0.29], [0, 0, 0], [1, 0.9, 0.5]);
+  addMesh(group, new THREE.CapsuleGeometry(0.4, 0.42, 8, 18), orange, [0, 0.62, 0], [0, 0, 0], [1, 1, 0.9]);
+  addMesh(group, new THREE.SphereGeometry(0.235, 24, 16), cream, [0, 0.62, 0.3], [0, 0, 0], [1, 0.92, 0.48]);
+  for (let i = 0; i < 3; i += 1) {
+    addMesh(group, new THREE.CapsuleGeometry(0.045, 0.2, 4, 8), orangeDark, [0.03 + i * 0.1, 0.82 - i * 0.07, -0.2], [0.2, 0.3, -0.22], [1, 1, 0.45]);
+  }
 
   const head = new THREE.Group();
   head.position.set(0, 1.11, 0.04);
   group.add(head);
   addMesh(head, new THREE.SphereGeometry(0.4, 32, 24), orange, [0, 0, 0], [0, 0, 0], [1.02, 0.95, 0.94]);
+  addMesh(head, new THREE.ConeGeometry(0.18, 0.34, 3), orange, [-0.23, 0.34, 0], [0, 0.2, -0.12]);
+  addMesh(head, new THREE.ConeGeometry(0.18, 0.34, 3), orange, [0.23, 0.34, 0], [0, -0.2, 0.12]);
+  addMesh(head, new THREE.ConeGeometry(0.1, 0.2, 3), pink, [-0.23, 0.34, 0.035], [0, 0.2, -0.12]);
+  addMesh(head, new THREE.ConeGeometry(0.1, 0.2, 3), pink, [0.23, 0.34, 0.035], [0, -0.2, 0.12]);
 
-  const ear = new THREE.ConeGeometry(0.18, 0.34, 3);
-  addMesh(head, ear, orange, [-0.23, 0.34, 0], [0, 0.2, -0.12]);
-  addMesh(head, ear.clone(), orange, [0.23, 0.34, 0], [0, -0.2, 0.12]);
-  addMesh(head, new THREE.ConeGeometry(0.1, 0.2, 3), orangeDark, [-0.23, 0.33, 0.03], [0, 0.2, -0.12]);
-  addMesh(head, new THREE.ConeGeometry(0.1, 0.2, 3), orangeDark, [0.23, 0.33, 0.03], [0, -0.2, 0.12]);
+  addMesh(head, new THREE.SphereGeometry(0.065, 16, 12), cream, [-0.14, 0.08, 0.335], [0, 0, 0], [1.15, 1.05, 0.55]);
+  addMesh(head, new THREE.SphereGeometry(0.065, 16, 12), cream, [0.14, 0.08, 0.335], [0, 0, 0], [1.15, 1.05, 0.55]);
+  addMesh(head, new THREE.SphereGeometry(0.043, 16, 12), ink, [-0.14, 0.08, 0.382]);
+  addMesh(head, new THREE.SphereGeometry(0.043, 16, 12), ink, [0.14, 0.08, 0.382]);
+  addMesh(head, new THREE.SphereGeometry(0.014, 12, 8), cream, [-0.125, 0.097, 0.416]);
+  addMesh(head, new THREE.SphereGeometry(0.014, 12, 8), cream, [0.155, 0.097, 0.416]);
 
-  addMesh(head, new THREE.SphereGeometry(0.055, 16, 12), ink, [-0.14, 0.08, 0.34]);
-  addMesh(head, new THREE.SphereGeometry(0.055, 16, 12), ink, [0.14, 0.08, 0.34]);
-  addMesh(head, new THREE.SphereGeometry(0.018, 12, 8), cream, [-0.125, 0.1, 0.385]);
-  addMesh(head, new THREE.SphereGeometry(0.018, 12, 8), cream, [0.155, 0.1, 0.385]);
-
-  addMesh(head, new THREE.SphereGeometry(0.17, 24, 16), cream, [0, -0.08, 0.31], [0, 0, 0], [1, 0.8, 0.55]);
+  addMesh(head, new THREE.SphereGeometry(0.18, 24, 16), cream, [0, -0.08, 0.31], [0, 0, 0], [1, 0.8, 0.55]);
   addMesh(head, new THREE.SphereGeometry(0.052, 16, 12), pink, [0, -0.035, 0.445], [0, 0, 0], [1, 0.75, 0.6]);
 
   const goggleBand = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.024, 8, 32), ink);
   goggleBand.rotation.x = Math.PI / 2;
   goggleBand.position.y = 0.16;
   head.add(goggleBand);
-  const lensGeo = new THREE.TorusGeometry(0.082, 0.017, 8, 20);
-  addMesh(head, lensGeo, ink, [-0.14, 0.08, 0.395], [0, 0, 0], [1, 0.78, 1]);
-  addMesh(head, lensGeo.clone(), ink, [0.14, 0.08, 0.395], [0, 0, 0], [1, 0.78, 1]);
+  const lensGeo = new THREE.TorusGeometry(0.087, 0.017, 8, 20);
+  addMesh(head, lensGeo, ink, [-0.14, 0.08, 0.405], [0, 0, 0], [1, 0.78, 1]);
+  addMesh(head, lensGeo.clone(), ink, [0.14, 0.08, 0.405], [0, 0, 0], [1, 0.78, 1]);
+  addMesh(head, new THREE.CircleGeometry(0.067, 20), lens, [-0.14, 0.08, 0.423], [0, 0, 0], [1, 0.78, 1]);
+  addMesh(head, new THREE.CircleGeometry(0.067, 20), lens, [0.14, 0.08, 0.423], [0, 0, 0], [1, 0.78, 1]);
 
-  addMesh(head, new THREE.CylinderGeometry(0.23, 0.25, 0.12, 18), orangeDark, [0, 0.37, 0], [0, 0.1, 0]);
+  const headphoneBand = new THREE.Mesh(new THREE.TorusGeometry(0.415, 0.036, 8, 32, Math.PI), ink);
+  headphoneBand.position.set(0, 0.08, -0.02);
+  head.add(headphoneBand);
+  const cupGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.075, 20);
+  const cupL = addMesh(head, cupGeo, ink, [-0.405, 0.05, 0.01], [0, 0, Math.PI / 2]);
+  const cupR = addMesh(head, cupGeo.clone(), ink, [0.405, 0.05, 0.01], [0, 0, Math.PI / 2]);
+  addMesh(cupL, new THREE.TorusGeometry(0.085, 0.012, 6, 20), orangeDark, [0, -0.04, 0], [Math.PI / 2, 0, 0]);
+  addMesh(cupR, new THREE.TorusGeometry(0.085, 0.012, 6, 20), orangeDark, [0, -0.04, 0], [Math.PI / 2, 0, 0]);
 
   const armL = addMesh(group, new THREE.CapsuleGeometry(0.07, 0.24, 4, 8), orange, [-0.4, 0.7, 0.3], [0.85, 0, 0.24]);
   const armR = addMesh(group, new THREE.CapsuleGeometry(0.07, 0.24, 4, 8), orange, [0.4, 0.7, 0.3], [0.85, 0, -0.24]);
+  addMesh(armL, new THREE.SphereGeometry(0.075, 14, 10), cream, [0, 0.18, 0]);
+  addMesh(armR, new THREE.SphereGeometry(0.075, 14, 10), cream, [0, 0.18, 0]);
   addMesh(group, new THREE.CapsuleGeometry(0.12, 0.2, 4, 8), orange, [-0.2, 0.15, 0.02]);
   addMesh(group, new THREE.CapsuleGeometry(0.12, 0.2, 4, 8), orange, [0.2, 0.15, 0.02]);
+  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), cream, [-0.2, 0.035, 0.09], [0, 0, 0], [1.2, 0.55, 1.35]);
+  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), cream, [0.2, 0.035, 0.09], [0, 0, 0], [1.2, 0.55, 1.35]);
 
   const tail = new THREE.Group();
   tail.position.set(0.38, 0.45, -0.3);
@@ -337,102 +457,139 @@ function createCat(): Character {
     new THREE.Vector3(0.55, 0.75, -0.05),
   ]);
   addMesh(tail, new THREE.TubeGeometry(tailCurve, 24, 0.075, 8, false), orange, [0, 0, 0]);
+  addMesh(tail, new THREE.SphereGeometry(0.08, 12, 8), cream, [0.55, 0.75, -0.05]);
+
   group.userData.parts = { head, armL, armR, tail, body: group };
-  return group;
+  return finishCharacter(group, 'cat');
 }
 
-function createPig(): Character {
+export function createPig(): Character {
   const group = new THREE.Group() as Character;
-  const pink = toon(C.pig);
-  const pinkDark = toon(C.pigDark);
-  const ink = toon(C.ink);
-  const cream = toon(C.cream);
-  const tomato = toon(C.tomato);
+  const pink = characterMaterial(0xf6b3c5);
+  const pinkLight = characterMaterial(0xffd1dc);
+  const pinkDark = characterMaterial(0xe88ca6);
+  const rose = characterMaterial(0xd97790);
+  const eye = characterMaterial(0x49333d);
+  const cream = characterMaterial(0xfff1e5);
+  const coral = characterMaterial(0xea7988);
+  const blush = new THREE.MeshBasicMaterial({ color: 0xf27f9a, transparent: true, opacity: 0.34, depthWrite: false });
+  const tablet = new THREE.MeshBasicMaterial({ color: 0x355564 });
+  const tabletLine = new THREE.MeshBasicMaterial({ color: 0x94e2dc });
+  const tabletAccent = new THREE.MeshBasicMaterial({ color: 0xf1c27b });
 
-  addMesh(group, new THREE.CapsuleGeometry(0.43, 0.45, 8, 16), pink, [0, 0.62, 0], [0, 0, 0], [1.05, 1, 0.9]);
-  addMesh(group, new THREE.SphereGeometry(0.25, 24, 16), pinkDark, [0, 0.6, 0.31], [0, 0, 0], [1, 0.85, 0.55]);
-  addMesh(group, new THREE.SphereGeometry(0.23, 20, 14), cream, [0, 0.43, 0.25], [0, 0, 0], [1.05, 1.2, 0.55]);
+  addMesh(group, new THREE.CapsuleGeometry(0.38, 0.3, 8, 22), pink, [0, 0.56, 0], [0, 0, 0], [1.02, 1, 0.88]);
+  addMesh(group, new THREE.SphereGeometry(0.23, 22, 14), pinkLight, [0, 0.52, 0.28], [0, 0, 0], [1, 1.05, 0.38]);
+  addMesh(group, new THREE.SphereGeometry(0.15, 18, 12), pinkLight, [0, 0.4, 0.32], [0, 0, 0], [1.08, 0.82, 0.26]);
 
   const head = new THREE.Group();
-  head.position.set(0, 1.18, 0.03);
+  head.position.set(0, 1.09, 0.04);
   group.add(head);
-  addMesh(head, new THREE.SphereGeometry(0.4, 28, 20), pink, [0, 0, 0], [0, 0, 0], [1.05, 0.96, 0.94]);
-  addMesh(head, new THREE.ConeGeometry(0.16, 0.3, 3), pink, [-0.26, 0.35, 0], [0, 0.2, -0.4]);
-  addMesh(head, new THREE.ConeGeometry(0.16, 0.3, 3), pink, [0.26, 0.35, 0], [0, -0.2, 0.4]);
-  addMesh(head, new THREE.ConeGeometry(0.09, 0.17, 3), pinkDark, [-0.26, 0.35, 0.02], [0, 0.2, -0.4]);
-  addMesh(head, new THREE.ConeGeometry(0.09, 0.17, 3), pinkDark, [0.26, 0.35, 0.02], [0, -0.2, 0.4]);
+  addMesh(head, new THREE.SphereGeometry(0.37, 34, 24), pink, [0, 0, 0], [0, 0, 0], [1.08, 0.96, 0.96]);
 
-  addMesh(head, new THREE.SphereGeometry(0.052, 16, 12), ink, [-0.14, 0.09, 0.34]);
-  addMesh(head, new THREE.SphereGeometry(0.052, 16, 12), ink, [0.14, 0.09, 0.34]);
-  addMesh(head, new THREE.SphereGeometry(0.017, 12, 8), cream, [-0.125, 0.11, 0.382]);
-  addMesh(head, new THREE.SphereGeometry(0.017, 12, 8), cream, [0.155, 0.11, 0.382]);
+  const earGeo = new THREE.CapsuleGeometry(0.09, 0.12, 4, 12);
+  const earL = addMesh(head, earGeo, pink, [-0.27, 0.25, 0.01], [0.16, 0, 0.48], [1.15, 0.82, 0.5]);
+  const earR = addMesh(head, earGeo.clone(), pink, [0.27, 0.25, 0.01], [0.16, 0, -0.48], [1.15, 0.82, 0.5]);
+  addMesh(earL, new THREE.CapsuleGeometry(0.052, 0.075, 4, 10), pinkDark, [0, 0.015, 0.045], [0, 0, 0], [1, 0.9, 0.28]);
+  addMesh(earR, new THREE.CapsuleGeometry(0.052, 0.075, 4, 10), pinkDark, [0, 0.015, 0.045], [0, 0, 0], [1, 0.9, 0.28]);
 
-  addMesh(head, new THREE.CylinderGeometry(0.18, 0.18, 0.12, 18), pinkDark, [0, -0.06, 0.4], [Math.PI / 2, 0, 0]);
-  addMesh(head, new THREE.SphereGeometry(0.03, 12, 8), ink, [-0.06, -0.06, 0.47]);
-  addMesh(head, new THREE.SphereGeometry(0.03, 12, 8), ink, [0.06, -0.06, 0.47]);
+  const curl = addMesh(head, new THREE.TorusGeometry(0.055, 0.012, 6, 20, Math.PI * 1.55), pinkDark, [0, 0.38, 0.02], [Math.PI / 2, 0.2, 0.2]);
+  curl.scale.set(0.8, 0.8, 1);
 
-  addMesh(group, new THREE.ConeGeometry(0.1, 0.2, 3), tomato, [0, 0.85, 0.29], [0, 0, Math.PI]);
-  addMesh(group, new THREE.BoxGeometry(0.12, 0.22, 0.03), tomato, [0, 0.68, 0.28], [0, 0, 0.1]);
+  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), eye, [-0.12, 0.065, 0.333], [0, 0, 0], [0.88, 1.22, 0.5]);
+  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), eye, [0.12, 0.065, 0.333], [0, 0, 0], [0.88, 1.22, 0.5]);
+  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [-0.108, 0.084, 0.364]);
+  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [0.132, 0.084, 0.364]);
+  addMesh(head, new THREE.SphereGeometry(0.007, 10, 6), cream, [-0.125, 0.047, 0.365]);
+  addMesh(head, new THREE.SphereGeometry(0.007, 10, 6), cream, [0.115, 0.047, 0.365]);
 
-  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.28, 4, 8), pink, [-0.36, 0.72, 0.1], [0.9, 0, 0.35]);
-  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.28, 4, 8), pink, [0.36, 0.72, 0.1], [0.9, 0, -0.35]);
-  addMesh(group, new THREE.CapsuleGeometry(0.13, 0.18, 4, 8), pink, [-0.22, 0.15, 0.02]);
-  addMesh(group, new THREE.CapsuleGeometry(0.13, 0.18, 4, 8), pink, [0.22, 0.15, 0.02]);
+  addMesh(head, new THREE.CircleGeometry(0.07, 20), blush, [-0.245, -0.065, 0.34], [0, 0, 0], [1, 0.56, 1]);
+  addMesh(head, new THREE.CircleGeometry(0.07, 20), blush, [0.245, -0.065, 0.34], [0, 0, 0], [1, 0.56, 1]);
+
+  addMesh(head, new THREE.SphereGeometry(0.155, 22, 14), pinkDark, [0, -0.07, 0.345], [0, 0, 0], [1.12, 0.74, 0.58]);
+  addMesh(head, new THREE.SphereGeometry(0.022, 12, 8), eye, [-0.05, -0.064, 0.425], [0, 0, 0], [1, 1.08, 0.4]);
+  addMesh(head, new THREE.SphereGeometry(0.022, 12, 8), eye, [0.05, -0.064, 0.425], [0, 0, 0], [1, 1.08, 0.4]);
+  addMesh(head, new THREE.TorusGeometry(0.045, 0.008, 6, 18, Math.PI), rose, [0, -0.155, 0.397], [0, 0, Math.PI]);
+
+  addMesh(group, new THREE.CapsuleGeometry(0.085, 0.19, 4, 10), pink, [-0.35, 0.6, 0.11], [0.56, 0, 0.4]);
+  addMesh(group, new THREE.CapsuleGeometry(0.085, 0.19, 4, 10), pink, [0.35, 0.6, 0.11], [0.56, 0, -0.4]);
+  addMesh(group, new THREE.SphereGeometry(0.095, 14, 10), pinkDark, [-0.38, 0.49, 0.19], [0, 0, 0], [1, 0.82, 0.82]);
+  addMesh(group, new THREE.SphereGeometry(0.095, 14, 10), pinkDark, [0.38, 0.49, 0.19], [0, 0, 0], [1, 0.82, 0.82]);
+  addMesh(group, new THREE.CapsuleGeometry(0.125, 0.14, 4, 10), pink, [-0.18, 0.14, 0.03]);
+  addMesh(group, new THREE.CapsuleGeometry(0.125, 0.14, 4, 10), pink, [0.18, 0.14, 0.03]);
+  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), pinkDark, [-0.18, 0.035, 0.1], [0, 0, 0], [1.12, 0.48, 1.2]);
+  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), pinkDark, [0.18, 0.035, 0.1], [0, 0, 0], [1.12, 0.48, 1.2]);
+
+  addMesh(group, new THREE.TorusGeometry(0.17, 0.028, 6, 24, Math.PI), cream, [0, 0.82, 0.31], [0, 0, Math.PI]);
+  addMesh(group, new THREE.SphereGeometry(0.045, 12, 8), coral, [-0.055, 0.79, 0.35], [0, 0, 0], [1.3, 0.7, 0.5]);
+  addMesh(group, new THREE.SphereGeometry(0.045, 12, 8), coral, [0.055, 0.79, 0.35], [0, 0, 0], [1.3, 0.7, 0.5]);
+  addMesh(group, new THREE.SphereGeometry(0.032, 12, 8), coral, [0, 0.79, 0.36]);
+
+  const tail = addMesh(group, new THREE.TorusGeometry(0.075, 0.02, 8, 20, Math.PI * 1.45), pinkDark, [0, 0.58, -0.43], [Math.PI / 2, 0.3, 0]);
+  tail.scale.set(0.9, 0.9, 0.8);
 
   const board = new THREE.Group();
-  board.position.set(0.58, 0.82, 0.46);
-  board.rotation.z = -0.08;
+  board.position.set(0.47, 0.69, 0.38);
+  board.rotation.set(-0.12, -0.18, -0.12);
   group.add(board);
-  addMesh(board, new THREE.BoxGeometry(0.34, 0.46, 0.04), cream, [0, 0, 0]);
-  addMesh(board, new THREE.BoxGeometry(0.12, 0.04, 0.05), ink, [0, 0.22, 0.02]);
-  for (let i = 0; i < 4; i += 1) {
-    addMesh(board, new THREE.BoxGeometry(0.22, 0.018, 0.01), ink, [-0.02, 0.08 - i * 0.075, 0.026]);
-  }
+  place(new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.4, 0.05, 4, 0.045), rose), board, [0, 0, 0]);
+  addMesh(board, new THREE.PlaneGeometry(0.24, 0.29), tablet, [0, 0, 0.031]);
+  addMesh(board, new THREE.BoxGeometry(0.16, 0.016, 0.012), tabletLine, [0, 0.07, 0.04]);
+  addMesh(board, new THREE.BoxGeometry(0.11, 0.013, 0.012), tabletAccent, [-0.025, 0.02, 0.04]);
+  addMesh(board, new THREE.BoxGeometry(0.14, 0.013, 0.012), tabletLine, [0, -0.03, 0.04]);
 
-  group.userData.parts = { head, board, body: group };
-  return group;
+  group.userData.parts = { head, board, tail, body: group };
+  return finishCharacter(group, 'pig');
 }
 
-function createCorgi(): Character {
+export function createCorgi(): Character {
   const group = new THREE.Group() as Character;
-  const orange = toon(C.corgi);
-  const cream = toon(C.cream);
-  const ink = toon(C.ink);
-  const pink = toon(0xef7890);
+  const orange = characterMaterial(C.corgi);
+  const orangeDark = characterMaterial(0xc75f21);
+  const cream = characterMaterial(C.cream);
+  const ink = characterMaterial(C.ink);
+  const pink = characterMaterial(0xef7890);
 
-  addMesh(group, new THREE.CapsuleGeometry(0.4, 0.3, 8, 16), orange, [0, 0.52, 0], [0, 0, 0], [1, 0.92, 0.85]);
-  addMesh(group, new THREE.SphereGeometry(0.24, 20, 14), cream, [0, 0.5, 0.29], [0, 0, 0], [1, 0.95, 0.55]);
-  addMesh(group, new THREE.SphereGeometry(0.22, 20, 14), cream, [0, 0.34, 0.2], [0, 0, 0], [1.1, 1.1, 0.55]);
+  addMesh(group, new THREE.CapsuleGeometry(0.4, 0.26, 8, 18), orange, [0, 0.5, 0], [0, 0, 0], [1, 0.9, 0.85]);
+  addMesh(group, new THREE.SphereGeometry(0.245, 22, 16), cream, [0, 0.48, 0.29], [0, 0, 0], [1, 1.05, 0.52]);
+  addMesh(group, new THREE.SphereGeometry(0.22, 20, 14), cream, [0, 0.33, 0.21], [0, 0, 0], [1.1, 1.1, 0.55]);
+  addMesh(group, new THREE.SphereGeometry(0.18, 18, 12), orangeDark, [0, 0.55, -0.26], [0, 0, 0], [1.15, 0.95, 0.5]);
 
   const head = new THREE.Group();
   head.position.set(0, 1.02, 0.05);
   group.add(head);
-  addMesh(head, new THREE.SphereGeometry(0.35, 28, 20), orange, [0, 0, 0], [0, 0, 0], [1.05, 0.95, 0.95]);
-  addMesh(head, new THREE.ConeGeometry(0.15, 0.4, 3), orange, [-0.24, 0.36, 0], [0, 0.2, -0.35]);
-  addMesh(head, new THREE.ConeGeometry(0.15, 0.4, 3), orange, [0.24, 0.36, 0], [0, -0.2, 0.35]);
-  addMesh(head, new THREE.ConeGeometry(0.08, 0.24, 3), cream, [-0.24, 0.37, 0.02], [0, 0.2, -0.35]);
-  addMesh(head, new THREE.ConeGeometry(0.08, 0.24, 3), cream, [0.24, 0.37, 0.02], [0, -0.2, 0.35]);
+  addMesh(head, new THREE.SphereGeometry(0.36, 30, 20), orange, [0, 0, 0], [0, 0, 0], [1.08, 0.96, 0.95]);
+  addMesh(head, new THREE.ConeGeometry(0.17, 0.44, 3), orange, [-0.25, 0.38, 0], [0, 0.18, -0.35]);
+  addMesh(head, new THREE.ConeGeometry(0.17, 0.44, 3), orange, [0.25, 0.38, 0], [0, -0.18, 0.35]);
+  addMesh(head, new THREE.ConeGeometry(0.09, 0.27, 3), cream, [-0.25, 0.38, 0.02], [0, 0.18, -0.35]);
+  addMesh(head, new THREE.ConeGeometry(0.09, 0.27, 3), cream, [0.25, 0.38, 0.02], [0, -0.18, 0.35]);
 
-  addMesh(head, new THREE.SphereGeometry(0.05, 16, 12), ink, [-0.12, 0.08, 0.3]);
-  addMesh(head, new THREE.SphereGeometry(0.05, 16, 12), ink, [0.12, 0.08, 0.3]);
-  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [-0.105, 0.1, 0.34]);
-  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [0.135, 0.1, 0.34]);
+  addMesh(head, new THREE.SphereGeometry(0.045, 16, 12), ink, [-0.125, 0.08, 0.36]);
+  addMesh(head, new THREE.SphereGeometry(0.045, 16, 12), ink, [0.125, 0.08, 0.36]);
+  addMesh(head, new THREE.SphereGeometry(0.014, 12, 8), cream, [-0.11, 0.095, 0.391]);
+  addMesh(head, new THREE.SphereGeometry(0.014, 12, 8), cream, [0.14, 0.095, 0.391]);
 
-  addMesh(head, new THREE.SphereGeometry(0.2, 24, 16), cream, [0, -0.08, 0.27], [0, 0, 0], [1.1, 0.78, 0.72]);
-  addMesh(head, new THREE.SphereGeometry(0.16, 20, 14), cream, [0, 0.04, 0.31], [0, 0, 0], [0.62, 1.35, 0.3]);
-  addMesh(head, new THREE.SphereGeometry(0.045, 12, 8), ink, [0, -0.03, 0.44]);
-  addMesh(head, new THREE.BoxGeometry(0.09, 0.07, 0.03), pink, [0, -0.12, 0.4], [0.2, 0, 0]);
+  addMesh(head, new THREE.SphereGeometry(0.205, 24, 16), cream, [0, -0.08, 0.285], [0, 0, 0], [1.12, 0.8, 0.72]);
+  addMesh(head, new THREE.SphereGeometry(0.16, 20, 14), cream, [0, 0.035, 0.325], [0, 0, 0], [0.6, 1.35, 0.28]);
+  addMesh(head, new THREE.SphereGeometry(0.046, 12, 8), ink, [0, -0.035, 0.45]);
+  addMesh(head, new THREE.BoxGeometry(0.1, 0.07, 0.035), pink, [0, -0.125, 0.41], [0.18, 0, 0]);
+  addMesh(head, new THREE.SphereGeometry(0.065, 14, 10), cream, [-0.2, -0.09, 0.33], [0, 0, 0], [1.15, 0.8, 0.45]);
+  addMesh(head, new THREE.SphereGeometry(0.065, 14, 10), cream, [0.2, -0.09, 0.33], [0, 0, 0], [1.15, 0.8, 0.45]);
 
   addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), cream, [-0.2, 0.16, 0.03]);
   addMesh(group, new THREE.CapsuleGeometry(0.09, 0.18, 4, 8), cream, [0.2, 0.16, 0.03]);
-  addMesh(group, new THREE.TorusGeometry(0.23, 0.025, 8, 24), new THREE.MeshBasicMaterial({ color: C.tomatoDark }), [0, 0.79, 0], [Math.PI / 2, 0, 0]);
-  addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [-0.35, 0.55, -0.05], [0, 0, 0.4]);
-  addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [0.35, 0.55, -0.05], [0, 0, -0.4]);
+  addMesh(group, new THREE.SphereGeometry(0.105, 14, 10), cream, [-0.2, 0.035, 0.09], [0, 0, 0], [1.2, 0.5, 1.3]);
+  addMesh(group, new THREE.SphereGeometry(0.105, 14, 10), cream, [0.2, 0.035, 0.09], [0, 0, 0], [1.2, 0.5, 1.3]);
+  addMesh(group, new THREE.TorusGeometry(0.23, 0.025, 8, 24), new THREE.MeshBasicMaterial({ color: 0x8c4e2b }), [0, 0.79, 0], [Math.PI / 2, 0, 0]);
+  addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), orange, [-0.35, 0.55, -0.05], [0, 0, 0.4]);
+  addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), orange, [0.35, 0.55, -0.05], [0, 0, -0.4]);
+  addMesh(group, new THREE.SphereGeometry(0.085, 12, 8), cream, [-0.35, 0.46, 0.02]);
+  addMesh(group, new THREE.SphereGeometry(0.085, 12, 8), cream, [0.35, 0.46, 0.02]);
 
-  const tail = addMesh(group, new THREE.ConeGeometry(0.1, 0.26, 12), orange, [0, 0.62, -0.5], [1.2, 0, 0]);
+  const tail = addMesh(group, new THREE.ConeGeometry(0.1, 0.22, 12), orange, [0, 0.62, -0.48], [1.18, 0, 0]);
+  addMesh(group, new THREE.SphereGeometry(0.07, 12, 8), cream, [0, 0.1, -0.08]).position.set(0, 0.72, -0.54);
 
   group.userData.parts = { head, tail, body: group };
-  return group;
+  return finishCharacter(group, 'corgi');
 }
 
 function createRoom(scene: THREE.Scene): void {
@@ -481,9 +638,16 @@ function createRoom(scene: THREE.Scene): void {
   const windowFrame = box(3.2, 2.2, 0.12, C.cream);
   windowFrame.position.set(0.2, 2.85, -3.86);
   scene.add(windowFrame);
-  const sky = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.8), new THREE.MeshBasicMaterial({ map: cyberWindowTexture() }));
+  const windowTextures = {
+    night: cyberWindowTexture(false),
+    lightsOn: cyberWindowTexture(true),
+  };
+  const skyMaterial = new THREE.MeshBasicMaterial({ map: windowTextures.night });
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.8), skyMaterial);
   sky.position.set(0.2, 2.85, -3.79);
   scene.add(sky);
+  scene.userData.windowTextures = windowTextures;
+  scene.userData.skyMaterial = skyMaterial;
 
   const neonMaterial = new THREE.MeshBasicMaterial({ color: C.tomatoDark });
   const magentaMaterial = new THREE.MeshBasicMaterial({ color: C.tomato });
@@ -551,6 +715,7 @@ function createRoom(scene: THREE.Scene): void {
   drawer.position.set(0.4, 0.72, 0.08);
   desk.add(drawer);
 
+  const screenGlows: THREE.PointLight[] = [];
   [-3.6, -2.7, -1.8].forEach((x, index) => {
     const frame = rounded(0.86, 0.54, 0.06, 0.03, C.dark);
     frame.position.set(x, 1.76, -2.3);
@@ -558,10 +723,12 @@ function createRoom(scene: THREE.Scene): void {
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.46), new THREE.MeshBasicMaterial({ map: laptopTexture() }));
     screen.position.set(x, 1.76, -2.26);
     scene.add(screen);
-    const glow = new THREE.PointLight(index === 1 ? C.tomato : C.tomatoDark, 1.8, 2.6, 2);
+    const glow = new THREE.PointLight(index === 1 ? 0xff4fa3 : 0x4debff, 0.48, 2.25, 2);
     glow.position.set(x, 1.6, -2.0);
     scene.add(glow);
+    screenGlows.push(glow);
   });
+  scene.userData.screenGlows = screenGlows;
 
   const keyboard = box(0.78, 0.035, 0.24, C.dark);
   keyboard.position.set(-2.7, 1.11, -1.08);
@@ -753,6 +920,77 @@ function createRoom(scene: THREE.Scene): void {
   scene.userData.ceilingPanel = ceilingPanel;
   scene.userData.dust = dust;
 
+  const setRole = (object: THREE.Object3D, role: RoomRole) => {
+    object.traverse((child) => {
+      if (child instanceof THREE.Mesh) child.userData.roomRole = role;
+    });
+  };
+  const setRoleByMaterial = (root: THREE.Object3D, color: number, role: RoomRole) => {
+    root.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      if (materials.some((material) => 'color' in material && material.color instanceof THREE.Color && material.color.getHex() === color)) {
+        child.userData.roomRole = role;
+      }
+    });
+  };
+
+  setRole(floor, 'floor');
+  setRole(backWall, 'wall');
+  setRole(leftWall, 'wallSide');
+  setRole(rightWall, 'wallSide');
+  setRole(skirting, 'woodDark');
+  setRole(rug, 'rug');
+  setRole(rugInner, 'rugInner');
+  setRole(rugRing, 'accentAlt');
+  setRole(windowFrame, 'woodDark');
+  setRole(mullionV, 'woodDark');
+  setRole(mullionH, 'woodDark');
+  setRole(sill, 'wood');
+  setRole(deskTop, 'wood');
+  setRole(drawer, 'woodDark');
+  setRoleByMaterial(desk, C.wood, 'wood');
+  setRoleByMaterial(desk, C.woodDark, 'woodDark');
+  setRole(pigStage, 'woodDark');
+  setRole(corgiBed, 'rug');
+  setRole(corgiCushion, 'rugInner');
+  setRoleByMaterial(catTree, C.wood, 'wood');
+  setRoleByMaterial(catTree, C.woodDark, 'woodDark');
+  setRoleByMaterial(catTree, C.tomato, 'accentAlt');
+  setRoleByMaterial(catTree, C.cream, 'propCream');
+  setRoleByMaterial(plant, C.tomato, 'accentAlt');
+  setRoleByMaterial(boxes, C.wood, 'wood');
+  setRoleByMaterial(boxes, C.cream, 'propCream');
+  setRoleByMaterial(boxes, C.tomato, 'accentAlt');
+  setRoleByMaterial(shelf, C.wood, 'wood');
+  setRoleByMaterial(shelf, C.woodDark, 'woodDark');
+  neonMaterial.userData.roomRole = 'accent';
+  magentaMaterial.userData.roomRole = 'accentAlt';
+  scene.userData.useNightPalette = () => {
+    scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const role = (object.userData.roomRole ?? materials.find((material) => material.userData.roomRole)?.userData.roomRole) as RoomRole | undefined;
+      if (!role) return;
+      materials.forEach((material) => {
+        if ('color' in material && material.color instanceof THREE.Color) material.color.setHex(ROOM_PALETTES.night[role]);
+      });
+    });
+  };
+  scene.userData.useLightsOnPalette = () => {
+    scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const role = (object.userData.roomRole ?? materials.find((material) => material.userData.roomRole)?.userData.roomRole) as RoomRole | undefined;
+      if (!role) return;
+      materials.forEach((material) => {
+        if ('color' in material && material.color instanceof THREE.Color) material.color.setHex(ROOM_PALETTES.lightsOn[role]);
+      });
+    });
+  };
+
+  scene.userData.viewBlockers = [shelf, chair, corgiBed, corgiCushion, corgi, catTree, pcTower, plant, boxes, deskTop];
+
   [
     ['desk', deskTop],
     ['bookshelf', shelf],
@@ -837,7 +1075,7 @@ export function initRoom(root: HTMLElement): void {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.02;
+  renderer.toneMappingExposure = 0.96;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(C.paper);
@@ -845,12 +1083,14 @@ export function initRoom(root: HTMLElement): void {
 
   const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 80);
 
-  const hemi = new THREE.HemisphereLight(0x4debff, 0x05070c, 0.55);
+  const hemi = new THREE.HemisphereLight(0x365a71, 0x11151a, 0.62);
   scene.add(hemi);
-  const key = new THREE.DirectionalLight(0x9beeff, 0.8);
+  const key = new THREE.DirectionalLight(0x9bbbc9, 0.46);
   key.position.set(-4, 7, 5);
   key.castShadow = !isMobile;
   key.shadow.mapSize.set(1024, 1024);
+  key.shadow.bias = -0.0008;
+  key.shadow.normalBias = 0.025;
   key.shadow.camera.left = -7;
   key.shadow.camera.right = 7;
   key.shadow.camera.top = 7;
@@ -858,36 +1098,41 @@ export function initRoom(root: HTMLElement): void {
   key.shadow.camera.near = 1;
   key.shadow.camera.far = 18;
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0x6fa8ff, 0.45);
+  const fill = new THREE.DirectionalLight(0x5e7087, 0.18);
   fill.position.set(4, 3, 2);
   scene.add(fill);
-  const lampLight = new THREE.PointLight(0xffb38a, 2.5, 7, 2);
-  lampLight.position.set(-3.9, 2.2, -1.9);
+  const lampLight = new THREE.PointLight(0xffb37b, 0.45, 4.2, 2);
+  lampLight.position.set(-3.9, 2.15, -1.85);
   scene.add(lampLight);
-  const ceilingLight = new THREE.PointLight(0xffd8b0, 0, 12, 2);
-  ceilingLight.position.set(0, 4.2, 0);
+  const ceilingLight = new THREE.PointLight(0xffd6aa, 0, 10, 2);
+  ceilingLight.position.set(0, 4.15, 0.2);
   scene.add(ceilingLight);
-  const windowLight = new THREE.PointLight(0x4debff, 4, 8, 2);
-  windowLight.position.set(0.2, 2.8, -3.2);
+  const windowLight = new THREE.PointLight(0x6fa4b8, 0.52, 5.5, 2);
+  windowLight.position.set(0.2, 2.8, -3.15);
   scene.add(windowLight);
-  const shelfLight = new THREE.PointLight(0xff3ea5, 3.5, 6, 2);
-  shelfLight.position.set(2.8, 2.6, -2.9);
+  const shelfLight = new THREE.PointLight(0xff4fa3, 0.4, 3.4, 2);
+  shelfLight.position.set(2.8, 2.45, -2.8);
   scene.add(shelfLight);
-  const frontFill = new THREE.DirectionalLight(0xc8f4ff, 1.35);
+  const frontFill = new THREE.DirectionalLight(0xc2dce4, 0.3);
   frontFill.position.set(0, 2.8, 6);
   scene.add(frontFill);
-  const characterLight = new THREE.PointLight(0xfff0e0, 1.5, 9, 2);
-  characterLight.position.set(0, 1.7, 2.4);
-  scene.add(characterLight);
-  scene.userData.lighting = { hemi, key, fill, lampLight, ceilingLight, windowLight, shelfLight, frontFill, characterLight };
+  const characterKey = new THREE.DirectionalLight(0xe4eef1, 0.62);
+  characterKey.position.set(2.8, 3.6, 4.8);
+  characterKey.castShadow = false;
+  scene.add(characterKey);
+  const characterFill = new THREE.DirectionalLight(0x91b4c4, 0.28);
+  characterFill.position.set(-2.4, 2.1, 3.2);
+  characterFill.castShadow = false;
+  scene.add(characterFill);
+  scene.userData.lighting = { hemi, key, fill, lampLight, ceilingLight, windowLight, shelfLight, frontFill, characterKey, characterFill };
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    isMobile ? 0.18 : 0.45,
-    0.35,
-    0.82,
+    isMobile ? 0.1 : 0.2,
+    0.3,
+    0.9,
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -902,40 +1147,132 @@ export function initRoom(root: HTMLElement): void {
       windowLight: THREE.PointLight;
       shelfLight: THREE.PointLight;
       frontFill: THREE.DirectionalLight;
-      characterLight: THREE.PointLight;
+      characterKey: THREE.DirectionalLight;
+      characterFill: THREE.DirectionalLight;
     };
-    lighting.hemi.intensity = lightsOn ? 2.6 : (isMobile ? 1.05 : 0.9);
-    lighting.hemi.color.setHex(lightsOn ? 0xbfefff : 0x2d6f9f);
-    lighting.key.intensity = lightsOn ? 3.2 : (isMobile ? 1.25 : 1.1);
-    lighting.fill.intensity = lightsOn ? 0.8 : 0.3;
-    lighting.lampLight.intensity = lightsOn ? 10 : 2.5;
-    lighting.ceilingLight.intensity = lightsOn ? 20 : 0;
-    lighting.windowLight.intensity = lightsOn ? 1.5 : 2.5;
-    lighting.shelfLight.intensity = lightsOn ? 0.8 : 1.2;
-    lighting.frontFill.intensity = lightsOn ? 2.6 : (isMobile ? 1.1 : 0.7);
-    lighting.characterLight.intensity = lightsOn ? 4.5 : (isMobile ? 1.9 : 1.5);
-    renderer.toneMappingExposure = lightsOn ? 1.38 : 1.05;
-    bloom.strength = lightsOn ? 0.1 : (isMobile ? 0.14 : 0.35);
-    scene.background = new THREE.Color(lightsOn ? 0x14263b : 0x070a12);
-    if (scene.fog instanceof THREE.Fog) scene.fog.color.setHex(lightsOn ? 0x14263b : 0x070a12);
+    if (lightsOn) {
+      lighting.hemi.color.setHex(0xd9c8b3);
+      lighting.hemi.groundColor.setHex(0x49382c);
+      lighting.hemi.intensity = 1.08;
+      lighting.key.color.setHex(0xffd6a5);
+      lighting.key.intensity = 1.08;
+      lighting.fill.color.setHex(0xc8ad8e);
+      lighting.fill.intensity = 0.2;
+      lighting.lampLight.color.setHex(0xffbd7c);
+      lighting.lampLight.intensity = 2.1;
+      lighting.ceilingLight.color.setHex(0xffd7a7);
+      lighting.ceilingLight.intensity = 7.2;
+      lighting.windowLight.color.setHex(0xd9b98e);
+      lighting.windowLight.intensity = 0.24;
+      lighting.shelfLight.color.setHex(0xd39154);
+      lighting.shelfLight.intensity = 0.22;
+      lighting.frontFill.color.setHex(0xffe1bf);
+      lighting.frontFill.intensity = 0.34;
+      lighting.characterKey.color.setHex(0xffe4c4);
+      lighting.characterKey.intensity = 0.42;
+      lighting.characterFill.color.setHex(0xc6aa8c);
+      lighting.characterFill.intensity = 0.16;
+      renderer.toneMappingExposure = 1;
+      bloom.strength = isMobile ? 0.015 : 0.03;
+    } else {
+      lighting.hemi.color.setHex(0x365a71);
+      lighting.hemi.groundColor.setHex(0x11151a);
+      lighting.hemi.intensity = isMobile ? 0.7 : 0.62;
+      lighting.key.color.setHex(0x9bbbc9);
+      lighting.key.intensity = isMobile ? 0.52 : 0.46;
+      lighting.fill.color.setHex(0x5e7087);
+      lighting.fill.intensity = 0.18;
+      lighting.lampLight.color.setHex(0xffb37b);
+      lighting.lampLight.intensity = 0.45;
+      lighting.ceilingLight.intensity = 0;
+      lighting.windowLight.color.setHex(0x6fa4b8);
+      lighting.windowLight.intensity = 0.52;
+      lighting.shelfLight.color.setHex(0xff4fa3);
+      lighting.shelfLight.intensity = 0.4;
+      lighting.frontFill.color.setHex(0xc2dce4);
+      lighting.frontFill.intensity = 0.3;
+      lighting.characterKey.color.setHex(0xe4eef1);
+      lighting.characterKey.intensity = 0.62;
+      lighting.characterFill.color.setHex(0x91b4c4);
+      lighting.characterFill.intensity = 0.28;
+      renderer.toneMappingExposure = 0.98;
+      bloom.strength = isMobile ? 0.1 : 0.2;
+    }
+
+    const background = lightsOn ? 0x302d28 : 0x05080f;
+    scene.background = new THREE.Color(background);
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.color.setHex(background);
+      scene.fog.near = lightsOn ? 14 : 12;
+      scene.fog.far = lightsOn ? 34 : 30;
+    }
+
     const ceilingPanel = scene.userData.ceilingPanel as THREE.Mesh | undefined;
     if (ceilingPanel && ceilingPanel.material instanceof THREE.MeshBasicMaterial) {
-      ceilingPanel.material.color.setHex(lightsOn ? 0xffe0b0 : 0x182333);
+      ceilingPanel.material.color.setHex(lightsOn ? 0xd8c29f : 0x182333);
     }
+    const skyMaterial = scene.userData.skyMaterial as THREE.MeshBasicMaterial | undefined;
+    const windowTextures = scene.userData.windowTextures as { night: THREE.Texture; lightsOn: THREE.Texture } | undefined;
+    if (skyMaterial && windowTextures) skyMaterial.map = lightsOn ? windowTextures.lightsOn : windowTextures.night;
+    const cityRain = scene.userData.cityRain as THREE.Points | undefined;
+    if (cityRain?.material instanceof THREE.PointsMaterial) cityRain.material.opacity = lightsOn ? 0.22 : 0.62;
+    const screenGlows = (scene.userData.screenGlows ?? []) as THREE.PointLight[];
+    screenGlows.forEach((glow) => { glow.intensity = lightsOn ? 0.1 : 0.22; });
+    const applyPalette = scene.userData[lightsOn ? 'useLightsOnPalette' : 'useNightPalette'] as (() => void) | undefined;
+    applyPalette?.();
   };
   const onTheme = (event: Event) => {
     const detail = (event as CustomEvent<{ theme?: string }>).detail;
     applyLighting(detail?.theme === 'light');
   };
   window.addEventListener('cattery:theme', onTheme);
-  applyLighting(document.documentElement.dataset.theme === 'light');
 
   createRoom(scene);
+  applyLighting(document.documentElement.dataset.theme === 'light');
 
   const cat = scene.userData.cat as Character;
   const pig = scene.userData.pig as Character;
   const corgi = scene.userData.corgi as Character;
   const dust = scene.userData.dust as THREE.Points | undefined;
+
+  const characterEntries: Array<[CharacterKind, Character]> = [
+    ['cat', cat],
+    ['pig', pig],
+    ['corgi', corgi],
+  ];
+  const controls = new Map<CharacterKind, CharacterControlState>();
+  const hitProxies: THREE.Mesh[] = [];
+  for (const [kind, character] of characterEntries) {
+    character.userData.kind = kind;
+    controls.set(kind, {
+      object: character,
+      basePosition: character.position.clone(),
+      baseRotation: character.rotation.clone(),
+      baseScale: character.scale.clone(),
+      dragging: false,
+      reactionCount: 0,
+      reaction: null,
+      returnTween: null,
+    });
+
+    const box = worldBox(character);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const proxy = new THREE.Mesh(
+      new THREE.BoxGeometry(size.x * 1.12, size.y * 1.05, size.z * 1.16),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        colorWrite: false,
+      }),
+    );
+    proxy.position.copy(center);
+    proxy.userData.characterKind = kind;
+    proxy.renderOrder = -10;
+    scene.add(proxy);
+    hitProxies.push(proxy);
+  }
 
   const stationOrder: StationId[] = ['establishing', 'cat', 'pig', 'corgi', 'about'];
   const presets: Record<StationId, CameraPreset> = {
@@ -954,11 +1291,11 @@ export function initRoom(root: HTMLElement): void {
       tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.8 },
     },
     pig: {
-      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(-0.5, 0.16, 1), lateral: -0.67, vertical: 0 },
-      mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.3 },
-      mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.95 },
-      tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.15 },
-      tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.8 },
+      desktop: { fov: 46, padding: 0.38, direction: new THREE.Vector3(0.7, 0.56, 1), lateral: -0.66, vertical: -0.02 },
+      mobile: { fov: 50, padding: 0.3, direction: new THREE.Vector3(0.34, 0.42, 1), lateral: 0, vertical: -0.34 },
+      mobileOpen: { fov: 56, padding: 1.22, direction: new THREE.Vector3(0.3, 0.55, 1), lateral: 0, vertical: -1.44 },
+      tablet: { fov: 50, padding: 0.42, direction: new THREE.Vector3(0.44, 0.46, 1), lateral: 0, vertical: -0.22 },
+      tabletOpen: { fov: 56, padding: 2.35, direction: new THREE.Vector3(0.38, 0.58, 1), lateral: 0, vertical: -1.18 },
     },
     corgi: {
       desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.2, 1), lateral: 0.78, vertical: 0 },
@@ -980,6 +1317,10 @@ export function initRoom(root: HTMLElement): void {
     new THREE.Vector3(-2.2, 0.4, -4.0),
     new THREE.Vector3(2.8, 4.7, -3.35),
   );
+  const pigFallback: FrameSpec = isMobile
+    ? { fov: 54, padding: 0.4, direction: new THREE.Vector3(0.12, 1.15, 0.78), lateral: 0, vertical: -0.24 }
+    : { fov: 48, padding: 0.46, direction: new THREE.Vector3(0.25, 1.05, 0.8), lateral: -0.52, vertical: -0.05 };
+  const occlusionRay = new THREE.Raycaster();
   const basePosition = new THREE.Vector3();
   const baseTarget = new THREE.Vector3();
   const pointer = new THREE.Vector2();
@@ -988,8 +1329,19 @@ export function initRoom(root: HTMLElement): void {
   const progressDots = [...root.querySelectorAll<HTMLElement>('.room-progress-dots i')];
   let currentStation: StationId = 'establishing';
   let panelOpen = Boolean(root.querySelector('[data-station-panel].is-open'));
+  let pigOccluded = false;
   let raf = 0;
   let visible = true;
+
+  const pigViewOccluded = (position: THREE.Vector3) => {
+    const target = worldBox(pig).getCenter(new THREE.Vector3());
+    const direction = target.clone().sub(position);
+    const distance = direction.length();
+    occlusionRay.set(position, direction.normalize());
+    const blockers = (scene.userData.viewBlockers ?? []) as THREE.Object3D[];
+    const hits = occlusionRay.intersectObjects(blockers, true);
+    return hits.some((hit) => hit.distance > 0.08 && hit.distance < distance - 0.32);
+  };
 
   const unionBoxes = (boxes: THREE.Box3[]) =>
     boxes.reduce((union, box) => union.union(box), new THREE.Box3());
@@ -1033,12 +1385,19 @@ export function initRoom(root: HTMLElement): void {
   const applyStation = (station: StationId, immediate = false) => {
     currentStation = station;
     updateStationUI(station);
+    window.dispatchEvent(new CustomEvent('cattery:station-change', { detail: { station } }));
     const preset = !isMobile
       ? presets[station].desktop
       : isPhone
         ? (panelOpen && presets[station].mobileOpen ? presets[station].mobileOpen! : presets[station].mobile)
         : (panelOpen && presets[station].tabletOpen ? presets[station].tabletOpen! : presets[station].tablet);
-    const frame = frameBox(boxForStation(station), preset);
+    let frame = frameBox(boxForStation(station), preset);
+    pigOccluded = false;
+    if (station === 'pig' && pigViewOccluded(frame.position)) {
+      pigOccluded = true;
+      frame = frameBox(worldBox(pig), pigFallback);
+      if (!import.meta.env.DEV) pigOccluded = false;
+    }
     gsap.killTweensOf(basePosition);
     gsap.killTweensOf(baseTarget);
     gsap.killTweensOf(camera);
@@ -1087,30 +1446,220 @@ export function initRoom(root: HTMLElement): void {
   );
   stations.forEach((station) => stationObserver.observe(station));
 
-  window.addEventListener(
-    'pointermove',
-    (event) => {
-      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
-    },
-    { passive: true },
+  const interactionRaycaster = new THREE.Raycaster();
+  const interactionPointer = new THREE.Vector2();
+  interface ActiveInteraction {
+    kind: CharacterKind;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+    dragging: boolean;
+  }
+  let hoveredCharacter: CharacterKind | null = null;
+  let activeInteraction: ActiveInteraction | null = null;
+
+  const isUiTarget = (target: EventTarget | null) => (
+    target instanceof Element
+    && Boolean(target.closest('.site-header, .site-footer, .station-panel, .room-progress, .room-skip, a, button, input, textarea, select'))
   );
 
+  const characterAt = (clientX: number, clientY: number): CharacterKind | null => {
+    interactionPointer.set(
+      (clientX / window.innerWidth) * 2 - 1,
+      -(clientY / window.innerHeight) * 2 + 1,
+    );
+    camera.updateMatrixWorld();
+    interactionRaycaster.setFromCamera(interactionPointer, camera);
+    const hit = interactionRaycaster.intersectObjects(hitProxies, false)[0];
+    return (hit?.object.userData.characterKind as CharacterKind | undefined) ?? null;
+  };
+
+  const setHoveredCharacter = (kind: CharacterKind | null) => {
+    hoveredCharacter = kind;
+    root.classList.toggle('is-character-hover', Boolean(kind) && !activeInteraction?.dragging);
+  };
+
+  const stopCharacterMotion = (control: CharacterControlState) => {
+    control.reaction?.kill();
+    control.reaction = null;
+    control.returnTween?.kill();
+    control.returnTween = null;
+    gsap.killTweensOf(control.object.position);
+    gsap.killTweensOf(control.object.rotation);
+    gsap.killTweensOf(control.object.scale);
+    const head = control.object.userData.parts.head;
+    if (head) gsap.killTweensOf(head.rotation);
+  };
+
+  const restoreBasePose = (control: CharacterControlState) => {
+    control.object.position.copy(control.basePosition);
+    control.object.rotation.copy(control.baseRotation);
+    control.object.scale.copy(control.baseScale);
+    const head = control.object.userData.parts.head;
+    if (head) head.rotation.x = 0;
+  };
+
   const playReaction = (kind: CharacterKind) => {
-    const character = kind === 'cat' ? cat : kind === 'pig' ? pig : corgi;
-    if (!character) return;
-    gsap.killTweensOf(character.scale);
-    gsap.timeline()
-      .to(character.scale, { x: 1.04, y: 0.97, z: 1.04, duration: 0.1, ease: 'power2.out' })
-      .to(character.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'elastic.out(1, 0.45)' });
+    const control = controls.get(kind);
+    if (!control) return;
+    stopCharacterMotion(control);
+    restoreBasePose(control);
+    control.dragging = false;
+    control.reactionCount += 1;
+    window.dispatchEvent(new CustomEvent('cattery:character-interaction', { detail: { kind } }));
+    const object = control.object;
+    const base = control.baseRotation;
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        restoreBasePose(control);
+        control.reaction = null;
+      },
+    });
+
     if (kind === 'cat') {
-      gsap.fromTo(character.position, { y: character.position.y }, { y: character.position.y + 0.08, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.out' });
+      const head = object.userData.parts.head;
+      timeline
+        .to(object.scale, { x: 1.045, y: 0.94, z: 1.045, duration: 0.1, ease: 'power2.out' }, 0)
+        .to(object.position, { y: control.basePosition.y + 0.11, duration: 0.16, ease: 'power2.out' }, 0)
+        .to(head.rotation, { x: -0.12, duration: 0.12, ease: 'power2.out' }, 0)
+        .to(object.scale, { x: 1, y: 1.02, z: 1, duration: 0.18, ease: 'power2.inOut' }, 0.1)
+        .to(object.position, { y: control.basePosition.y, duration: 0.34, ease: 'bounce.out' }, 0.16)
+        .to(head.rotation, { x: 0, duration: 0.2, ease: 'power2.inOut' }, 0.16)
+        .to(object.scale, { x: 1, y: 1, z: 1, duration: 0.2, ease: 'power2.out' }, 0.3);
     } else if (kind === 'pig') {
-      gsap.to(character.rotation, { y: character.rotation.y + 0.15, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.inOut' });
+      const head = object.userData.parts.head;
+      timeline
+        .to(object.scale, { x: 1.04, y: 0.965, z: 1.04, duration: 0.1, ease: 'power2.out' }, 0)
+        .to(object.rotation, { y: base.y + 0.16, duration: 0.2, ease: 'power2.out' }, 0)
+        .to(head.rotation, { x: 0.12, duration: 0.13, ease: 'power2.out' }, 0)
+        .to(object.rotation, { y: base.y, duration: 0.28, ease: 'power2.inOut' }, 0.18)
+        .to(head.rotation, { x: 0, duration: 0.2, ease: 'power2.inOut' }, 0.16)
+        .to(object.scale, { x: 1, y: 1, z: 1, duration: 0.24, ease: 'elastic.out(1, 0.5)' }, 0.16);
     } else {
-      gsap.to(character.rotation, { z: 0.08, duration: 0.12, yoyo: true, repeat: 3, ease: 'power1.inOut', onComplete: () => { character.rotation.z = 0; } });
+      timeline
+        .to(object.scale, { x: 1.045, y: 0.95, z: 1.045, duration: 0.09, ease: 'power2.out' }, 0)
+        .to(object.rotation, { z: 0.1, duration: 0.11, ease: 'power2.out' }, 0)
+        .to(object.rotation, { z: -0.09, duration: 0.11, ease: 'power2.inOut' }, 0.1)
+        .to(object.rotation, { z: 0.055, duration: 0.11, ease: 'power2.inOut' }, 0.2)
+        .to(object.rotation, { z: 0, duration: 0.2, ease: 'power2.out' }, 0.3)
+        .to(object.scale, { x: 1, y: 1, z: 1, duration: 0.26, ease: 'elastic.out(1, 0.45)' }, 0.12);
+    }
+    control.reaction = timeline;
+  };
+
+  const returnCharacterToBase = (kind: CharacterKind) => {
+    const control = controls.get(kind);
+    if (!control) return;
+    stopCharacterMotion(control);
+    control.dragging = false;
+    control.returnTween = gsap.to(control.object.rotation, {
+      x: control.baseRotation.x,
+      y: control.baseRotation.y,
+      z: control.baseRotation.z,
+      duration: 0.35,
+      ease: 'power3.out',
+      overwrite: true,
+      onComplete: () => {
+        restoreBasePose(control);
+        control.returnTween = null;
+      },
+    });
+  };
+
+  const beginDrag = (interaction: ActiveInteraction) => {
+    const control = controls.get(interaction.kind);
+    if (!control) return;
+    stopCharacterMotion(control);
+    restoreBasePose(control);
+    control.dragging = true;
+    interaction.dragging = true;
+    root.classList.remove('is-character-hover');
+    root.classList.add('is-character-dragging');
+  };
+
+  const releaseActiveInteraction = (springBack: boolean) => {
+    const interaction = activeInteraction;
+    if (!interaction) return;
+    const control = controls.get(interaction.kind);
+    if (control) control.dragging = false;
+    activeInteraction = null;
+    root.classList.remove('is-character-dragging');
+    if (interaction.dragging && springBack) returnCharacterToBase(interaction.kind);
+  };
+
+  const onPointerDown = (event: PointerEvent) => {
+    if (!event.isPrimary || activeInteraction || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (isUiTarget(event.target)) return;
+    const kind = characterAt(event.clientX, event.clientY);
+    if (!kind) return;
+    window.dispatchEvent(new CustomEvent('cattery:character-interaction', { detail: { kind } }));
+    activeInteraction = {
+      kind,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+      dragging: false,
+    };
+    try { root.setPointerCapture(event.pointerId); } catch {}
+    setHoveredCharacter(kind);
+  };
+
+  const onPointerMove = (event: PointerEvent) => {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
+
+    if (!activeInteraction) {
+      setHoveredCharacter(isUiTarget(event.target) ? null : characterAt(event.clientX, event.clientY));
+      return;
+    }
+    if (event.pointerId !== activeInteraction.pointerId) return;
+
+    const dx = event.clientX - activeInteraction.startX;
+    const dy = event.clientY - activeInteraction.startY;
+    if (!activeInteraction.dragging && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+      beginDrag(activeInteraction);
+    }
+    if (activeInteraction.dragging) {
+      const control = controls.get(activeInteraction.kind);
+      if (control) {
+        control.object.rotation.y = control.baseRotation.y + THREE.MathUtils.clamp(dx / 200, -0.55, 0.55);
+      }
+      if (event.cancelable) event.preventDefault();
+    } else if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      activeInteraction.moved = true;
     }
   };
+
+  const onPointerUp = (event: PointerEvent) => {
+    const interaction = activeInteraction;
+    if (!interaction || event.pointerId !== interaction.pointerId) return;
+    const shouldReact = !interaction.dragging
+      && !interaction.moved
+      && !isUiTarget(event.target);
+    releaseActiveInteraction(true);
+    try { root.releasePointerCapture(event.pointerId); } catch {}
+    if (shouldReact) playReaction(interaction.kind);
+    setHoveredCharacter(isUiTarget(event.target) ? null : characterAt(event.clientX, event.clientY));
+  };
+
+  const onPointerCancel = (event: PointerEvent) => {
+    if (!activeInteraction || event.pointerId !== activeInteraction.pointerId) return;
+    releaseActiveInteraction(true);
+    try { root.releasePointerCapture(event.pointerId); } catch {}
+  };
+
+  const onWindowBlur = () => {
+    releaseActiveInteraction(true);
+    setHoveredCharacter(null);
+  };
+
+  root.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove, { passive: false });
+  window.addEventListener('pointerup', onPointerUp, { passive: true });
+  window.addEventListener('pointercancel', onPointerCancel, { passive: true });
+  window.addEventListener('blur', onWindowBlur);
 
   root.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-poke]') : null;
@@ -1123,7 +1672,7 @@ export function initRoom(root: HTMLElement): void {
     if (!visible || document.hidden) return;
     const elapsed = (performance.now() - startedAt) / 1000;
     camera.position.copy(basePosition);
-    if (!isTouch) {
+    if (!isTouch && !activeInteraction?.dragging) {
       camera.position.x += THREE.MathUtils.clamp(pointer.x, -1, 1) * 0.08;
       camera.position.y -= THREE.MathUtils.clamp(pointer.y, -1, 1) * 0.04;
     }
@@ -1199,14 +1748,129 @@ export function initRoom(root: HTMLElement): void {
       characters: { cat: screenRect(cat), pig: screenRect(pig), corgi: screenRect(corgi) },
       panel: panelBox ? { left: panelBox.left, top: panelBox.top, right: panelBox.right, bottom: panelBox.bottom, width: panelBox.width, height: panelBox.height } : null,
       collisions: findCollisions(scene),
+      pigOccluded,
+      pigCamera: currentStation === 'pig' ? (pigOccluded ? 'fallback-high' : 'right-front-high') : null,
     };
   };
 
-  (window as unknown as { __catteryRoomDebug?: { getFraming: () => unknown; getCollisions: () => string[]; setStation: (station: StationId) => void } }).__catteryRoomDebug = {
-    getFraming,
-    getCollisions: () => findCollisions(scene),
-    setStation: (station: StationId) => applyStation(station, true),
+  const speech = root.querySelector<HTMLElement>('[data-character-speech]');
+  const speechName = speech?.querySelector<HTMLElement>('[data-character-speech-name]');
+  const speechText = speech?.querySelector<HTMLElement>('[data-character-speech-text]');
+  const lastLine = new Map<CharacterKind, string>();
+  let speechTimer = 0;
+  let speechHideTimer = 0;
+
+  const hideSpeech = () => {
+    window.clearTimeout(speechHideTimer);
+    if (!speech || speech.hidden) return;
+    speech.classList.remove('is-visible');
+    speechHideTimer = window.setTimeout(() => {
+      if (speech) speech.hidden = true;
+    }, 240);
   };
+
+  const chooseLine = (kind: CharacterKind) => {
+    const lines = CHARACTER_LINES[kind];
+    const previous = lastLine.get(kind);
+    const available = lines.length > 1 ? lines.filter((line) => line !== previous) : lines;
+    const line = available[Math.floor(Math.random() * available.length)] ?? lines[0];
+    lastLine.set(kind, line);
+    return line;
+  };
+
+  const showSpeech = (kind?: CharacterKind, fixedLine?: string) => {
+    if (!speech || !speechName || !speechText || !visible || document.hidden) return;
+    const speakingKind = kind ?? (['cat', 'pig', 'corgi'] as CharacterKind[])[Math.floor(Math.random() * 3)];
+    const control = controls.get(speakingKind);
+    if (!control) return;
+    const rect = screenRect(control.object);
+    const bubbleWidth = Math.min(340, window.innerWidth - 32);
+    const x = THREE.MathUtils.clamp(
+      (rect.left + rect.right) / 2,
+      bubbleWidth / 2 + 16,
+      window.innerWidth - bubbleWidth / 2 - 16,
+    );
+    const y = Math.max(112, Math.min(rect.top + 28, window.innerHeight - (isPhone ? 340 : 130)));
+    speech.style.setProperty('--speech-x', `${x}px`);
+    speech.style.setProperty('--speech-y', `${y}px`);
+    speech.dataset.kind = speakingKind;
+    speechName.textContent = CHARACTER_NAMES[speakingKind];
+    speechText.textContent = fixedLine ?? chooseLine(speakingKind);
+    speech.hidden = false;
+    requestAnimationFrame(() => speech.classList.add('is-visible'));
+    window.clearTimeout(speechHideTimer);
+    speechHideTimer = window.setTimeout(() => {
+      hideSpeech();
+      scheduleNextSpeech();
+    }, 5200);
+  };
+
+  function scheduleNextSpeech(delay = 12000 + Math.random() * 12000) {
+    window.clearTimeout(speechTimer);
+    speechTimer = window.setTimeout(() => {
+      if (!visible || document.hidden) {
+        scheduleNextSpeech(6000);
+        return;
+      }
+      const stationKind = currentStation === 'cat' || currentStation === 'pig' || currentStation === 'corgi'
+        ? currentStation
+        : undefined;
+      showSpeech(stationKind);
+    }, delay);
+  }
+
+  const onCharacterInteraction = () => {
+    hideSpeech();
+    scheduleNextSpeech(10000);
+  };
+  const onStationChange = () => {
+    hideSpeech();
+    scheduleNextSpeech(8000);
+  };
+  const onVisibilityChange = () => {
+    if (document.hidden) {
+      window.clearTimeout(speechTimer);
+      hideSpeech();
+    } else {
+      scheduleNextSpeech(6000);
+    }
+  };
+  window.addEventListener('cattery:character-interaction', onCharacterInteraction);
+  window.addEventListener('cattery:station-change', onStationChange);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  scheduleNextSpeech(7000 + Math.random() * 5000);
+
+  if (import.meta.env.DEV || new URLSearchParams(location.search).has('room-debug')) {
+    (window as unknown as {
+      __catteryRoomDebug?: {
+        getFraming: () => unknown;
+        getCollisions: () => string[];
+        setStation: (station: StationId) => void;
+        getCharacterState: (kind: CharacterKind) => unknown;
+        poke: (kind: CharacterKind) => void;
+        emitCharacterLine: (kind: CharacterKind) => void;
+      };
+    }).__catteryRoomDebug = {
+      getFraming,
+      getCollisions: () => findCollisions(scene),
+      setStation: (station: StationId) => applyStation(station, true),
+      getCharacterState: (kind: CharacterKind) => {
+        const control = controls.get(kind);
+        if (!control) return null;
+        return {
+          positionY: control.object.position.y,
+          basePositionY: control.basePosition.y,
+          rotationY: control.object.rotation.y,
+          baseRotationY: control.baseRotation.y,
+          dragging: control.dragging,
+          reactionCount: control.reactionCount,
+          hovered: hoveredCharacter,
+        };
+      },
+      poke: (kind: CharacterKind) => playReaction(kind),
+      emitCharacterLine: (kind: CharacterKind) => showSpeech(kind),
+    };
+  }
 
   const onPanelToggle = (event: Event) => {
     const detail = (event as CustomEvent<{ open?: boolean }>).detail;
@@ -1216,7 +1880,7 @@ export function initRoom(root: HTMLElement): void {
   window.addEventListener('cattery:panel-toggle', onPanelToggle);
 
   const collisions = findCollisions(scene);
-  if (collisions.length > 0) {
+  if (import.meta.env.DEV && collisions.length > 0) {
     console.warn('[cattery room] collision audit:', collisions);
   }
 
@@ -1246,6 +1910,18 @@ export function initRoom(root: HTMLElement): void {
     visibilityObserver.disconnect();
     window.removeEventListener('cattery:panel-toggle', onPanelToggle);
     window.removeEventListener('cattery:theme', onTheme);
+    window.removeEventListener('resize', resize);
+    root.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerCancel);
+    window.removeEventListener('blur', onWindowBlur);
+    window.clearTimeout(speechTimer);
+    hideSpeech();
+    window.clearTimeout(speechHideTimer);
+    window.removeEventListener('cattery:character-interaction', onCharacterInteraction);
+    window.removeEventListener('cattery:station-change', onStationChange);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         object.geometry.dispose();

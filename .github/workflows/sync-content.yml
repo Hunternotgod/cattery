@@ -1,0 +1,50 @@
+name: Sync Gitee content
+
+on:
+  schedule:
+    # 03:10 Asia/Shanghai
+    - cron: '10 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gitee-content-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Gitee snapshots
+        run: npm run content:sync
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+
+      - name: Verify site build
+        run: npm run check
+
+      - name: Commit changed snapshots
+        run: |
+          if git diff --quiet -- src/data/gitee-repos.json src/data/miao-secretary-release.json src/data/gitee-contributions.json; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git config user.name "cattery sync bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/data/gitee-repos.json src/data/miao-secretary-release.json src/data/gitee-contributions.json
+          git commit -m "chore: sync Gitee content"
+          git push

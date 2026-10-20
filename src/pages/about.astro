@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Mascot from '../components/Mascot.astro';
+import Portrait from '../components/Portrait.astro';
 import { SITE } from '../data/site';
+import ContributionHeatmap from '../components/ContributionHeatmap.astro';
 ---
 <BaseLayout title="关于" description="关于 cattery、肥猫叉烧，以及猫工程师、猪老板和柯基捣蛋鬼。">
   <div class="container">
@@ -44,15 +45,15 @@ import { SITE } from '../data/site';
           <h2>房间住户</h2>
           <div class="mascot-roster">
             <div class="mascot-roster-item">
-              <Mascot kind="cat" class="mascot-roster-art" />
+              <Portrait kind="cat" class="mascot-roster-art" />
               <div><strong>猫工程师</strong><span>项目、调试和凌晨的提交。</span></div>
             </div>
             <div class="mascot-roster-item">
-              <Mascot kind="pig" class="mascot-roster-art" />
+              <Portrait kind="pig" class="mascot-roster-art" />
               <div><strong>猪老板</strong><span>仓库、审阅和“这个能不能上线”。</span></div>
             </div>
             <div class="mascot-roster-item">
-              <Mascot kind="corgi" class="mascot-roster-art" />
+              <Portrait kind="corgi" class="mascot-roster-art" />
               <div><strong>柯基捣蛋鬼</strong><span>笔记、意外和打翻的纸堆。</span></div>
             </div>
           </div>
@@ -70,5 +71,7 @@ import { SITE } from '../data/site';
         </div>
       </aside>
     </section>
+
+    <ContributionHeatmap variant="about" class="about-contributions" />
   </div>
 </BaseLayout>

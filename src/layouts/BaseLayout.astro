@@ -6,6 +6,8 @@ import '@fontsource-variable/public-sans';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import ReadingProgress from '../components/ReadingProgress.astro';
+import CodeCopy from '../components/CodeCopy.astro';
 import { SITE } from '../data/site';
 
 interface Props {
@@ -44,7 +46,10 @@ const ogImage = new URL(image, base);
       (() => {
         try {
           const saved = localStorage.getItem('theme');
-          document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
+          const requested = new URLSearchParams(location.search).get('theme');
+          document.documentElement.dataset.theme = requested === 'light' || requested === 'dark'
+            ? requested
+            : saved === 'light' ? 'light' : 'dark';
         } catch {}
       })();
     </script>
@@ -52,8 +57,8 @@ const ogImage = new URL(image, base);
     <meta name="description" content={description} />
     <meta name="author" content={SITE.author} />
     <meta name="generator" content={Astro.generator} />
-    <meta name="theme-color" content="#f2ebdd" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#171310" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#2b2924" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#05080f" media="(prefers-color-scheme: dark)" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -83,10 +88,12 @@ const ogImage = new URL(image, base);
     <div class="page-wipe" aria-hidden="true"></div>
     <div class="cursor-ring" aria-hidden="true"></div>
     <Header />
+    {article && <ReadingProgress />}
     <main id="main">
       <slot />
     </main>
     <Footer />
+    {article && <CodeCopy />}
     <script is:inline>
       (() => {
         const root = document.documentElement;

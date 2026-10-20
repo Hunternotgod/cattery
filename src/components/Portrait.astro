@@ -1,0 +1,22 @@
+---
+import { PORTRAITS, type PortraitKind } from '../data/portraits';
+
+interface Props {
+  kind: PortraitKind;
+  class?: string;
+  alt?: string;
+  loading?: 'eager' | 'lazy';
+}
+
+const { kind, class: className = '', alt = '', loading = 'lazy' } = Astro.props;
+const portrait = PORTRAITS[kind];
+---
+<img
+  class:list={['character-portrait', className]}
+  src={portrait.src}
+  width={portrait.width}
+  height={portrait.height}
+  alt={alt}
+  loading={loading}
+  decoding="async"
+/>

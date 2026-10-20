@@ -10,7 +10,8 @@
     "check": "astro check",
     "repos:sync": "node scripts/sync-gitee-repos.mjs",
     "release:sync": "node scripts/sync-miao-release.mjs",
-    "content:sync": "npm run repos:sync && npm run release:sync"
+    "content:sync": "npm run repos:sync && npm run release:sync && npm run contributions:sync",
+    "contributions:sync": "node scripts/sync-gitee-contributions.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

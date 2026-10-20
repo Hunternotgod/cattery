@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NoteCard from '../../components/NoteCard.astro';
-import Mascot from '../../components/Mascot.astro';
+import Portrait from '../../components/Portrait.astro';
 import { getPublishedNotes } from '../../utils/notes';
 
 const notes = await getPublishedNotes();
@@ -16,7 +16,7 @@ const notes = await getPublishedNotes();
     </header>
 
     <div class="notes-intro">
-      <Mascot kind="corgi" class="notes-intro-mascot" />
+      <Portrait kind="corgi" class="notes-intro-mascot" />
       <p>柯基把纸堆弄乱了。这里是从里面捡出来的几页。</p>
     </div>
 
