@@ -46,7 +46,7 @@ A personal portfolio for 肥猫叉烧, made for Chinese readers. It should feel 
 
 ## Motion
 
-- GSAP ScrollTrigger drives the camera through the room.
+- Five station-based camera presets frame the establishing shot and each character’s full body; GSAP eases between presets.
 - Idle loops: cat typing/tail, pig nodding, corgi bouncing.
 - Pointer parallax on desktop.
 - One tomato page-wipe transition; desktop cursor ring; primary CTA magnetic shift.

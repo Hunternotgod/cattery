@@ -1,9 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const C = {
   paper: 0xf2ebdd,
@@ -24,13 +21,39 @@ const C = {
   mint: 0xbdf4e4,
   sky: 0xcfe8e2,
   green: 0x5c7258,
-  metal: 0x8f949b,
   dark: 0x1b1d22,
 };
 
 type Character = THREE.Group & {
   userData: { parts: Record<string, THREE.Object3D> };
 };
+
+type StationId = 'establishing' | 'cat' | 'pig' | 'corgi' | 'about';
+
+interface FrameSpec {
+  fov: number;
+  padding: number;
+  direction: THREE.Vector3;
+  lateral: number;
+  vertical: number;
+}
+
+interface CameraPreset {
+  desktop: FrameSpec;
+  mobile: FrameSpec;
+  mobileOpen?: FrameSpec;
+  tablet: FrameSpec;
+  tabletOpen?: FrameSpec;
+}
+
+interface ScreenRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
 
 const gradientMap = (() => {
   const data = new Uint8Array([64, 132, 210, 255]);
@@ -83,6 +106,18 @@ function place(
   parent.add(mesh);
   return mesh;
 }
+function snapToSurface(object: THREE.Object3D, surfaceY: number): void {
+  object.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(object);
+  object.position.y += surfaceY - bounds.min.y;
+  object.updateMatrixWorld(true);
+}
+
+function worldBox(object: THREE.Object3D): THREE.Box3 {
+  object.updateWorldMatrix(true, true);
+  return new THREE.Box3().setFromObject(object);
+}
+
 function rounded(w: number, h: number, d: number, r: number, color: number): THREE.Mesh {
   return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, r), toon(color));
 }
@@ -188,7 +223,6 @@ function createCat(): Character {
   const cream = toon(C.cream);
   const ink = toon(C.ink);
   const pink = toon(0xef7890);
-  const metal = toon(C.metal);
 
   addMesh(group, new THREE.CapsuleGeometry(0.38, 0.42, 8, 16), orange, [0, 0.62, 0], [0, 0, 0], [1, 1, 0.9]);
   addMesh(group, new THREE.SphereGeometry(0.24, 24, 16), cream, [0, 0.62, 0.29], [0, 0, 0], [1, 0.9, 0.5]);
@@ -221,33 +255,22 @@ function createCat(): Character {
   addMesh(head, lensGeo.clone(), ink, [0.14, 0.08, 0.395], [0, 0, 0], [1, 0.78, 1]);
 
   addMesh(head, new THREE.CylinderGeometry(0.23, 0.25, 0.12, 18), orangeDark, [0, 0.37, 0], [0, 0.1, 0]);
-  addMesh(head, new THREE.BoxGeometry(0.34, 0.045, 0.2), orangeDark, [0, 0.32, 0.23], [-0.12, 0, 0]);
 
-  const armL = addMesh(group, new THREE.CapsuleGeometry(0.075, 0.3, 4, 8), orange, [-0.3, 0.72, 0.17], [0.9, 0, 0.28]);
-  const armR = addMesh(group, new THREE.CapsuleGeometry(0.075, 0.3, 4, 8), orange, [0.3, 0.72, 0.17], [0.9, 0, -0.28]);
+  const armL = addMesh(group, new THREE.CapsuleGeometry(0.07, 0.24, 4, 8), orange, [-0.4, 0.7, 0.3], [0.85, 0, 0.24]);
+  const armR = addMesh(group, new THREE.CapsuleGeometry(0.07, 0.24, 4, 8), orange, [0.4, 0.7, 0.3], [0.85, 0, -0.24]);
   addMesh(group, new THREE.CapsuleGeometry(0.12, 0.2, 4, 8), orange, [-0.2, 0.15, 0.02]);
   addMesh(group, new THREE.CapsuleGeometry(0.12, 0.2, 4, 8), orange, [0.2, 0.15, 0.02]);
 
-  addMesh(group, new THREE.CylinderGeometry(0.035, 0.04, 0.34, 8), metal, [0.38, 0.54, 0.25], [0.2, 0, -0.6]);
-  addMesh(group, new THREE.TorusGeometry(0.08, 0.022, 6, 12, Math.PI * 1.5), metal, [0.45, 0.35, 0.25], [0.2, 0, -0.6]);
-
   const tail = new THREE.Group();
-  tail.position.set(0.18, 0.55, -0.28);
+  tail.position.set(0.38, 0.45, -0.3);
   group.add(tail);
   const tailCurve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0.35, 0.12, -0.1),
-    new THREE.Vector3(0.52, 0.48, -0.04),
-    new THREE.Vector3(0.42, 0.9, 0.08),
+    new THREE.Vector3(0.3, 0.1, -0.18),
+    new THREE.Vector3(0.55, 0.35, -0.2),
+    new THREE.Vector3(0.55, 0.75, -0.05),
   ]);
   addMesh(tail, new THREE.TubeGeometry(tailCurve, 24, 0.075, 8, false), orange, [0, 0, 0]);
-  for (let i = 0; i < 3; i += 1) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.016, 6, 12), orangeDark);
-    ring.position.set(0.28 + i * 0.08, 0.25 + i * 0.22, 0);
-    ring.rotation.x = Math.PI / 2;
-    tail.add(ring);
-  }
-
   group.userData.parts = { head, armL, armR, tail, body: group };
   return group;
 }
@@ -289,11 +312,9 @@ function createPig(): Character {
   addMesh(group, new THREE.CapsuleGeometry(0.13, 0.18, 4, 8), pink, [-0.22, 0.15, 0.02]);
   addMesh(group, new THREE.CapsuleGeometry(0.13, 0.18, 4, 8), pink, [0.22, 0.15, 0.02]);
 
-  addMesh(group, new THREE.TorusGeometry(0.08, 0.022, 6, 12, Math.PI * 1.5), pinkDark, [0, 0.58, -0.35], [0, 0.4, 0]);
-
   const board = new THREE.Group();
-  board.position.set(0.44, 0.8, 0.25);
-  board.rotation.z = -0.12;
+  board.position.set(0.58, 0.82, 0.46);
+  board.rotation.z = -0.08;
   group.add(board);
   addMesh(board, new THREE.BoxGeometry(0.34, 0.46, 0.04), cream, [0, 0, 0]);
   addMesh(board, new THREE.BoxGeometry(0.12, 0.04, 0.05), ink, [0, 0.22, 0.02]);
@@ -338,20 +359,18 @@ function createCorgi(): Character {
   addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [-0.35, 0.55, -0.05], [0, 0, 0.4]);
   addMesh(group, new THREE.CapsuleGeometry(0.08, 0.16, 4, 8), cream, [0.35, 0.55, -0.05], [0, 0, -0.4]);
 
-  const tail = addMesh(group, new THREE.ConeGeometry(0.11, 0.34, 12), orange, [0, 0.62, -0.38], [1.2, 0, 0]);
+  const tail = addMesh(group, new THREE.ConeGeometry(0.1, 0.26, 12), orange, [0, 0.62, -0.5], [1.2, 0, 0]);
 
-  const paper = new THREE.Group();
-  paper.position.set(0.3, 0.45, 0.28);
-  paper.rotation.set(-0.3, 0.2, 0.1);
-  group.add(paper);
-  addMesh(paper, new THREE.BoxGeometry(0.36, 0.02, 0.28), cream, [0, 0, 0]);
-  addMesh(paper, new THREE.BoxGeometry(0.22, 0.006, 0.018), ink, [0, 0.014, -0.02]);
-
-  group.userData.parts = { head, tail, body: group, paper };
+  group.userData.parts = { head, tail, body: group };
   return group;
 }
 
 function createRoom(scene: THREE.Scene): void {
+  const colliders: Array<{ name: string; box: THREE.Box3 }> = [];
+  const addCollider = (name: string, object: THREE.Object3D) => {
+    colliders.push({ name, box: worldBox(object) });
+  };
+
   const floor = rounded(10, 0.2, 8, 0.08, C.wood);
   floor.position.set(0, -0.1, 0);
   scene.add(floor);
@@ -425,23 +444,22 @@ function createRoom(scene: THREE.Scene): void {
       desk.add(leg);
     }
   }
-  const drawer = rounded(1.2, 0.35, 0.9, 0.04, C.woodDark);
-  drawer.position.set(0.8, 0.75, 0.1);
+  const drawer = rounded(0.8, 0.3, 0.7, 0.04, C.woodDark);
+  drawer.position.set(0.4, 0.72, 0.08);
   desk.add(drawer);
-  addMesh(desk, new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshBasicMaterial({ color: C.ink }), [0.8, 0.75, 0.57]);
 
   const laptopBase = rounded(1.1, 0.06, 0.68, 0.03, C.dark);
-  laptopBase.position.set(-2.55, 1.12, -1.06);
+  laptopBase.position.set(-1.8, 1.12, -1.06);
   scene.add(laptopBase);
   const laptopScreen = new THREE.Mesh(
     new THREE.PlaneGeometry(1.08, 0.64),
     new THREE.MeshBasicMaterial({ map: laptopTexture() }),
   );
-  laptopScreen.position.set(-2.55, 1.45, -1.39);
+  laptopScreen.position.set(-1.8, 1.45, -1.39);
   laptopScreen.rotation.x = -0.08;
   scene.add(laptopScreen);
   const laptopFrame = box(1.16, 0.72, 0.05, C.dark);
-  laptopFrame.position.set(-2.55, 1.45, -1.42);
+  laptopFrame.position.set(-1.8, 1.45, -1.42);
   laptopFrame.rotation.x = -0.08;
   scene.add(laptopFrame);
 
@@ -478,33 +496,36 @@ function createRoom(scene: THREE.Scene): void {
       book.position.set(x, 0.78 + row * 0.72 + h / 2, 0.04);
       book.rotation.z = (i % 3 - 1) * 0.025;
       shelf.add(book);
-      x += w + 0.025;
+      x += w + 0.04;
     }
   }
 
   const pig = createPig();
-  pig.position.set(2.55, 0.05, -2.18);
-  pig.rotation.y = -0.12;
+  pig.position.set(2.55, 0, -1.9);
+  pig.rotation.y = -0.1;
+  snapToSurface(pig, 0);
   scene.add(pig);
   scene.userData.pig = pig;
 
   const cat = createCat();
-  cat.position.set(-3.25, 1.06, -1.55);
-  cat.rotation.y = 0.2;
+  cat.position.set(-3.8, 0, -1.32);
+  cat.rotation.y = 0.16;
+  snapToSurface(cat, 1.08);
   scene.add(cat);
   scene.userData.cat = cat;
 
   const corgi = createCorgi();
-  corgi.position.set(2.15, 0.06, 1.28);
-  corgi.rotation.y = -0.35;
+  corgi.position.set(2.0, 0, 1.1);
+  corgi.rotation.y = -0.28;
+  snapToSurface(corgi, 0.05);
   scene.add(corgi);
   scene.userData.corgi = corgi;
 
-  for (let i = 0; i < 5; i += 1) {
-    const paper = box(0.42, 0.018, 0.32, C.cream);
-    paper.position.set(1.2 + i * 0.35, 0.06 + i * 0.004, 0.55 + (i % 2) * 0.35);
-    paper.rotation.y = i * 0.3;
-    paper.rotation.z = (i % 3) * 0.08;
+  for (let i = 0; i < 3; i += 1) {
+    const paper = box(0.38, 0.018, 0.28, C.cream);
+    paper.position.set(0.65 + i * 0.32, 0.06 + i * 0.004, 2.05);
+    paper.rotation.y = i * 0.25;
+    paper.rotation.z = (i % 2) * 0.06;
     scene.add(paper);
   }
 
@@ -574,6 +595,42 @@ function createRoom(scene: THREE.Scene): void {
   );
   scene.add(dust);
   scene.userData.dust = dust;
+
+  [
+    ['desk', deskTop],
+    ['laptop base', laptopBase],
+    ['laptop screen', laptopFrame],
+    ['bookshelf', shelf],
+    ['cat tree', catTree],
+    ['boxes', boxes],
+    ['plant', plant],
+    ['back wall', backWall],
+    ['left wall', leftWall],
+    ['right wall', rightWall],
+    ['window', windowFrame],
+  ].forEach(([name, object]) => addCollider(String(name), object as THREE.Object3D));
+
+  scene.userData.colliders = colliders;
+}
+
+function findCollisions(scene: THREE.Scene): string[] {
+  const colliders = (scene.userData.colliders ?? []) as Array<{ name: string; box: THREE.Box3 }>;
+  const characters: Array<[string, THREE.Object3D | undefined]> = [
+    ['cat', scene.userData.cat as THREE.Object3D | undefined],
+    ['pig', scene.userData.pig as THREE.Object3D | undefined],
+    ['corgi', scene.userData.corgi as THREE.Object3D | undefined],
+  ];
+  const collisions: string[] = [];
+  for (const [characterName, character] of characters) {
+    if (!character) continue;
+    const characterBox = worldBox(character).expandByScalar(-0.025);
+    for (const collider of colliders) {
+      if (characterBox.intersectsBox(collider.box.clone().expandByScalar(-0.025))) {
+        collisions.push(characterName + ' × ' + collider.name);
+      }
+    }
+  }
+  return collisions;
 }
 
 export function initRoom(root: HTMLElement): void {
@@ -581,11 +638,19 @@ export function initRoom(root: HTMLElement): void {
   if (!canvas) return;
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isMobile = window.matchMedia('(max-width: 760px)').matches;
+  const exposeStaticPanels = () => {
+    root.querySelectorAll<HTMLElement>('[data-panel-body]').forEach((body) => { body.hidden = false; });
+    root.querySelectorAll<HTMLElement>('[data-panel-toggle]').forEach((toggle) => { toggle.hidden = true; });
+  };
+  const mobileQuery = window.matchMedia('(max-width: 1280px)');
+  let isMobile = mobileQuery.matches;
+  const phoneQuery = window.matchMedia('(max-width: 760px)');
+  let isPhone = phoneQuery.matches;
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
   if (reduced) {
     root.classList.add('is-static');
+    exposeStaticPanels();
     return;
   }
 
@@ -593,6 +658,7 @@ export function initRoom(root: HTMLElement): void {
   const supported = Boolean(test.getContext('webgl2') || test.getContext('webgl'));
   if (!supported) {
     root.classList.add('is-static');
+    exposeStaticPanels();
     return;
   }
 
@@ -606,6 +672,7 @@ export function initRoom(root: HTMLElement): void {
     });
   } catch {
     root.classList.add('is-static');
+    exposeStaticPanels();
     return;
   }
 
@@ -649,49 +716,153 @@ export function initRoom(root: HTMLElement): void {
   const corgi = scene.userData.corgi as Character;
   const dust = scene.userData.dust as THREE.Points | undefined;
 
-  const cameraCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 1.78, 6.2),
-    new THREE.Vector3(-1.15, 1.62, 1.75),
-    new THREE.Vector3(0.45, 1.6, 1.05),
-    new THREE.Vector3(1.7, 1.42, 2.5),
-    new THREE.Vector3(0.1, 1.7, 3.3),
-  ]);
-  const targetCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 1.55, -1.8),
-    new THREE.Vector3(-2.9, 1.42, -1.8),
-    new THREE.Vector3(2.75, 1.55, -2.5),
-    new THREE.Vector3(2.15, 0.82, 1.2),
-    new THREE.Vector3(0.2, 2.1, -3.8),
-  ]);
-
-  let targetProgress = 0;
-  let currentProgress = 0;
-  let raf = 0;
-  let visible = true;
-  const pointer = new THREE.Vector2();
-  const startedAt = performance.now();
-
-  const updateProgress = (progress: number) => {
-    root.style.setProperty('--room-progress', String(progress));
+  const stationOrder: StationId[] = ['establishing', 'cat', 'pig', 'corgi', 'about'];
+  const presets: Record<StationId, CameraPreset> = {
+    establishing: {
+      desktop: { fov: 48, padding: 0.14, direction: new THREE.Vector3(0, 0.22, 1), lateral: 0, vertical: -0.22 },
+      mobile: { fov: 58, padding: 0.16, direction: new THREE.Vector3(0, 0.24, 1), lateral: 0, vertical: -0.3 },
+      mobileOpen: { fov: 62, padding: 0.26, direction: new THREE.Vector3(0, 0.24, 1), lateral: 0, vertical: -0.42 },
+      tablet: { fov: 58, padding: 0.2, direction: new THREE.Vector3(0, 0.24, 1), lateral: 0, vertical: -0.18 },
+      tabletOpen: { fov: 62, padding: 0.35, direction: new THREE.Vector3(0, 0.24, 1), lateral: 0, vertical: -0.3 },
+    },
+    cat: {
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.18, 1), lateral: 0.71, vertical: 0 },
+      mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.3 },
+      mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.95 },
+      tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.15 },
+      tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(0.45, 0.16, 1), lateral: 0, vertical: -0.8 },
+    },
+    pig: {
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(-0.5, 0.16, 1), lateral: -0.66, vertical: 0 },
+      mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.3 },
+      mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.95 },
+      tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.15 },
+      tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(-0.4, 0.16, 1), lateral: 0, vertical: -0.8 },
+    },
+    corgi: {
+      desktop: { fov: 38, padding: 0.68, direction: new THREE.Vector3(0.5, 0.2, 1), lateral: 0.74, vertical: 0 },
+      mobile: { fov: 44, padding: 0.36, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.3 },
+      mobileOpen: { fov: 46, padding: 0.8, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.95 },
+      tablet: { fov: 44, padding: 0.7, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.15 },
+      tabletOpen: { fov: 46, padding: 1.6, direction: new THREE.Vector3(0.45, 0.2, 1), lateral: 0, vertical: -0.8 },
+    },
+    about: {
+      desktop: { fov: 46, padding: 0.1, direction: new THREE.Vector3(0, 0.12, 1), lateral: -0.25, vertical: 0 },
+      mobile: { fov: 50, padding: 0.12, direction: new THREE.Vector3(0, 0.12, 1), lateral: 0, vertical: -0.15 },
+      mobileOpen: { fov: 52, padding: 0.45, direction: new THREE.Vector3(0, 0.12, 1), lateral: 0, vertical: -0.35 },
+      tablet: { fov: 50, padding: 0.2, direction: new THREE.Vector3(0, 0.12, 1), lateral: 0, vertical: -0.1 },
+      tabletOpen: { fov: 52, padding: 0.5, direction: new THREE.Vector3(0, 0.12, 1), lateral: 0, vertical: -0.25 },
+    },
   };
 
-  ScrollTrigger.create({
-    trigger: root,
-    start: 'top top',
-    end: 'bottom bottom',
-    scrub: 0.7,
-    onUpdate: (self) => {
-      targetProgress = self.progress;
-      updateProgress(self.progress);
-    },
-  });
-
+  const windowBox = new THREE.Box3(
+    new THREE.Vector3(-2.2, 0.4, -4.0),
+    new THREE.Vector3(2.8, 4.7, -3.35),
+  );
+  const basePosition = new THREE.Vector3();
+  const baseTarget = new THREE.Vector3();
+  const pointer = new THREE.Vector2();
+  const startedAt = performance.now();
   const stations = [...root.querySelectorAll<HTMLElement>('[data-station]')];
+  const progressDots = [...root.querySelectorAll<HTMLElement>('.room-progress-dots i')];
+  let currentStation: StationId = 'establishing';
+  let panelOpen = Boolean(root.querySelector('[data-station-panel].is-open'));
+  let raf = 0;
+  let visible = true;
+
+  const unionBoxes = (boxes: THREE.Box3[]) =>
+    boxes.reduce((union, box) => union.union(box), new THREE.Box3());
+  const characterBoxes = () => [worldBox(cat), worldBox(pig), worldBox(corgi)];
+  const boxForStation = (station: StationId) => {
+    if (station === 'cat') return worldBox(cat);
+    if (station === 'pig') return worldBox(pig);
+    if (station === 'corgi') return worldBox(corgi);
+    if (station === 'about') return windowBox.clone();
+    return unionBoxes(characterBoxes());
+  };
+
+  const frameBox = (box: THREE.Box3, spec: FrameSpec) => {
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const vFov = THREE.MathUtils.degToRad(spec.fov);
+    const aspect = Math.max(camera.aspect, 0.35);
+    const tanV = Math.tan(vFov / 2);
+    const tanH = tanV * aspect;
+    const margin = 1 + spec.padding;
+    const distanceV = (size.y * margin * 0.5) / tanV;
+    const distanceH = (size.x * margin * 0.5) / tanH;
+    const distance = Math.max(distanceV, distanceH, 1.2) + size.z * 0.5;
+    const direction = spec.direction.clone().normalize();
+    const position = center.clone().addScaledVector(direction, distance);
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), direction).normalize();
+    const target = center.clone().addScaledVector(right, spec.lateral * size.x);
+    target.y += spec.vertical * size.y;
+    return { position, target, fov: spec.fov };
+  };
+
+  const updateStationUI = (station: StationId) => {
+    const index = stationOrder.indexOf(station);
+    root.style.setProperty('--room-progress', String(Math.max(0, index) / 4));
+    progressDots.forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === index));
+    stations.forEach((element, stationIndex) => {
+      element.classList.toggle('is-active', stationIndex === index);
+    });
+  };
+
+  const applyStation = (station: StationId, immediate = false) => {
+    currentStation = station;
+    updateStationUI(station);
+    const preset = !isMobile
+      ? presets[station].desktop
+      : isPhone
+        ? (panelOpen && presets[station].mobileOpen ? presets[station].mobileOpen! : presets[station].mobile)
+        : (panelOpen && presets[station].tabletOpen ? presets[station].tabletOpen! : presets[station].tablet);
+    const frame = frameBox(boxForStation(station), preset);
+    gsap.killTweensOf(basePosition);
+    gsap.killTweensOf(baseTarget);
+    gsap.killTweensOf(camera);
+
+    if (immediate) {
+      basePosition.copy(frame.position);
+      baseTarget.copy(frame.target);
+      camera.fov = frame.fov;
+      camera.updateProjectionMatrix();
+    } else {
+      gsap.to(basePosition, {
+        x: frame.position.x,
+        y: frame.position.y,
+        z: frame.position.z,
+        duration: 1.1,
+        ease: 'power2.inOut',
+        overwrite: true,
+      });
+      gsap.to(baseTarget, {
+        x: frame.target.x,
+        y: frame.target.y,
+        z: frame.target.z,
+        duration: 1.1,
+        ease: 'power2.inOut',
+        overwrite: true,
+      });
+      gsap.to(camera, {
+        fov: frame.fov,
+        duration: 1.1,
+        ease: 'power2.inOut',
+        overwrite: true,
+        onUpdate: () => camera.updateProjectionMatrix(),
+      });
+    }
+  };
+
   const stationObserver = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) entry.target.classList.toggle('is-active', entry.isIntersecting);
+      const entry = entries.find((item) => item.isIntersecting);
+      if (!entry) return;
+      const index = Number(entry.target.getAttribute('data-station'));
+      const next = stationOrder[index];
+      if (next) applyStation(next);
     },
-    { rootMargin: '-34% 0px -34% 0px', threshold: 0 },
+    { rootMargin: '-45% 0px -45% 0px', threshold: 0 },
   );
   stations.forEach((station) => stationObserver.observe(station));
 
@@ -709,14 +880,14 @@ export function initRoom(root: HTMLElement): void {
     if (!character) return;
     gsap.killTweensOf(character.scale);
     gsap.timeline()
-      .to(character.scale, { x: 1.08, y: 0.92, z: 1.08, duration: 0.1, ease: 'power2.out' })
-      .to(character.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: 'elastic.out(1, 0.4)' });
+      .to(character.scale, { x: 1.04, y: 0.97, z: 1.04, duration: 0.1, ease: 'power2.out' })
+      .to(character.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'elastic.out(1, 0.45)' });
     if (kind === 'cat') {
-      gsap.fromTo(character.position, { y: character.position.y }, { y: character.position.y + 0.18, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' });
+      gsap.fromTo(character.position, { y: character.position.y }, { y: character.position.y + 0.08, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.out' });
     } else if (kind === 'pig') {
-      gsap.to(character.rotation, { y: character.rotation.y + 0.35, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.inOut' });
+      gsap.to(character.rotation, { y: character.rotation.y + 0.15, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.inOut' });
     } else {
-      gsap.to(character.rotation, { z: 0.18, duration: 0.12, yoyo: true, repeat: 3, ease: 'power1.inOut', onComplete: () => { character.rotation.z = 0; } });
+      gsap.to(character.rotation, { z: 0.08, duration: 0.12, yoyo: true, repeat: 3, ease: 'power1.inOut', onComplete: () => { character.rotation.z = 0; } });
     }
   };
 
@@ -725,41 +896,98 @@ export function initRoom(root: HTMLElement): void {
     if (target?.dataset.poke) playReaction(target.dataset.poke);
   });
 
+  const corgiBaseY = corgi.position.y;
   const render = () => {
     raf = requestAnimationFrame(render);
     if (!visible || document.hidden) return;
     const elapsed = (performance.now() - startedAt) / 1000;
-    currentProgress += (targetProgress - currentProgress) * 0.065;
-    const t = THREE.MathUtils.clamp(currentProgress, 0, 1);
-    const position = cameraCurve.getPointAt(t);
-    const target = targetCurve.getPointAt(t);
-    camera.position.copy(position);
+    camera.position.copy(basePosition);
     if (!isTouch) {
-      camera.position.x += pointer.x * 0.1;
-      camera.position.y += -pointer.y * 0.045;
+      camera.position.x += THREE.MathUtils.clamp(pointer.x, -1, 1) * 0.08;
+      camera.position.y -= THREE.MathUtils.clamp(pointer.y, -1, 1) * 0.04;
     }
-    camera.lookAt(target);
+    camera.lookAt(baseTarget);
 
     if (cat) {
-      cat.userData.parts.head.rotation.y = Math.sin(elapsed * 0.8) * 0.08;
-      cat.userData.parts.tail.rotation.z = Math.sin(elapsed * 1.8) * 0.18;
-      cat.userData.parts.armL.rotation.x = 0.9 + Math.sin(elapsed * 5.2) * 0.12;
-      cat.userData.parts.armR.rotation.x = 0.9 + Math.cos(elapsed * 5.4) * 0.12;
+      cat.userData.parts.head.rotation.y = Math.sin(elapsed * 0.8) * 0.04;
+      cat.userData.parts.tail.rotation.z = Math.sin(elapsed * 1.8) * 0.1;
+      cat.userData.parts.armL.rotation.x = 0.85 + Math.sin(elapsed * 5.2) * 0.06;
+      cat.userData.parts.armR.rotation.x = 0.85 + Math.cos(elapsed * 5.4) * 0.06;
     }
     if (pig) {
-      pig.userData.parts.head.rotation.y = Math.sin(elapsed * 0.65 + 1) * 0.06;
-      pig.userData.parts.head.rotation.z = Math.sin(elapsed * 0.9) * 0.025;
-      pig.userData.parts.board.rotation.z = -0.12 + Math.sin(elapsed * 0.7) * 0.03;
+      pig.userData.parts.head.rotation.y = Math.sin(elapsed * 0.65 + 1) * 0.03;
+      pig.userData.parts.head.rotation.z = Math.sin(elapsed * 0.9) * 0.015;
+      pig.userData.parts.board.rotation.z = -0.08 + Math.sin(elapsed * 0.7) * 0.015;
     }
     if (corgi) {
-      corgi.position.y = 0.06 + Math.abs(Math.sin(elapsed * 1.8)) * 0.035;
-      corgi.userData.parts.tail.rotation.z = Math.sin(elapsed * 3.2) * 0.25;
-      corgi.userData.parts.head.rotation.z = Math.sin(elapsed * 0.9) * 0.035;
+      corgi.position.y = corgiBaseY + Math.abs(Math.sin(elapsed * 1.8)) * 0.02;
+      corgi.userData.parts.tail.rotation.z = Math.sin(elapsed * 3.2) * 0.14;
+      corgi.userData.parts.head.rotation.z = Math.sin(elapsed * 0.9) * 0.02;
     }
     if (dust) dust.rotation.y = elapsed * 0.012;
 
     renderer.render(scene, camera);
   };
+
+  const screenRect = (object: THREE.Object3D): ScreenRect => {
+    const box = worldBox(object);
+    const min = box.min;
+    const max = box.max;
+    const corners = [
+      new THREE.Vector3(min.x, min.y, min.z),
+      new THREE.Vector3(min.x, min.y, max.z),
+      new THREE.Vector3(min.x, max.y, min.z),
+      new THREE.Vector3(min.x, max.y, max.z),
+      new THREE.Vector3(max.x, min.y, min.z),
+      new THREE.Vector3(max.x, min.y, max.z),
+      new THREE.Vector3(max.x, max.y, min.z),
+      new THREE.Vector3(max.x, max.y, max.z),
+    ];
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const corner of corners) {
+      const projected = corner.clone().project(camera);
+      const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+    return { left, top, right, bottom, width: right - left, height: bottom - top };
+  };
+
+  const getFraming = () => {
+    const activePanel = root.querySelector<HTMLElement>('.room-station.is-active .station-panel');
+    const panelBox = activePanel?.getBoundingClientRect();
+    return {
+      station: currentStation,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      characters: { cat: screenRect(cat), pig: screenRect(pig), corgi: screenRect(corgi) },
+      panel: panelBox ? { left: panelBox.left, top: panelBox.top, right: panelBox.right, bottom: panelBox.bottom, width: panelBox.width, height: panelBox.height } : null,
+      collisions: findCollisions(scene),
+    };
+  };
+
+  (window as unknown as { __catteryRoomDebug?: { getFraming: () => unknown; getCollisions: () => string[]; setStation: (station: StationId) => void } }).__catteryRoomDebug = {
+    getFraming,
+    getCollisions: () => findCollisions(scene),
+    setStation: (station: StationId) => applyStation(station, true),
+  };
+
+  const onPanelToggle = (event: Event) => {
+    const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+    panelOpen = Boolean(detail?.open);
+    if (isMobile) applyStation(currentStation);
+  };
+  window.addEventListener('cattery:panel-toggle', onPanelToggle);
+
+  const collisions = findCollisions(scene);
+  if (collisions.length > 0) {
+    console.warn('[cattery room] collision audit:', collisions);
+  }
 
   const visibilityObserver = new IntersectionObserver(
     ([entry]) => {
@@ -770,10 +998,13 @@ export function initRoom(root: HTMLElement): void {
   visibilityObserver.observe(root);
 
   const resize = () => {
+    isMobile = mobileQuery.matches;
+    isPhone = phoneQuery.matches;
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.75));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
+    applyStation(currentStation, true);
   };
   window.addEventListener('resize', resize, { passive: true });
 
@@ -781,9 +1012,7 @@ export function initRoom(root: HTMLElement): void {
     cancelAnimationFrame(raf);
     stationObserver.disconnect();
     visibilityObserver.disconnect();
-    ScrollTrigger.getAll().forEach((trigger) => {
-      if (trigger.trigger === root) trigger.kill();
-    });
+    window.removeEventListener('cattery:panel-toggle', onPanelToggle);
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         object.geometry.dispose();
@@ -796,10 +1025,9 @@ export function initRoom(root: HTMLElement): void {
   window.addEventListener('pagehide', cleanup, { once: true });
 
   root.classList.add('is-ready');
-  updateProgress(0);
-  camera.position.copy(cameraCurve.getPointAt(0));
-  camera.lookAt(targetCurve.getPointAt(0));
+  applyStation('establishing', true);
   render();
 }
+
 
 
