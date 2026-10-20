@@ -465,77 +465,75 @@ export function createCat(): Character {
 
 export function createPig(): Character {
   const group = new THREE.Group() as Character;
-  const pink = characterMaterial(0xf6b3c5);
-  const pinkLight = characterMaterial(0xffd1dc);
-  const pinkDark = characterMaterial(0xe88ca6);
-  const rose = characterMaterial(0xd97790);
-  const eye = characterMaterial(0x49333d);
+  const pink = characterMaterial(0xf5adc0);
+  const pinkLight = characterMaterial(0xffc7d5);
+  const pinkDark = characterMaterial(0xe887a2);
+  const rose = characterMaterial(0xc8758d);
+  const ink = characterMaterial(C.ink);
   const cream = characterMaterial(0xfff1e5);
-  const coral = characterMaterial(0xea7988);
-  const blush = new THREE.MeshBasicMaterial({ color: 0xf27f9a, transparent: true, opacity: 0.34, depthWrite: false });
-  const tablet = new THREE.MeshBasicMaterial({ color: 0x355564 });
-  const tabletLine = new THREE.MeshBasicMaterial({ color: 0x94e2dc });
-  const tabletAccent = new THREE.MeshBasicMaterial({ color: 0xf1c27b });
+  const coral = characterMaterial(0xe97783);
+  const blush = new THREE.MeshBasicMaterial({ color: 0xf17d98, transparent: true, opacity: 0.3, depthWrite: false });
+  const tablet = new THREE.MeshBasicMaterial({ color: 0x355464 });
+  const tabletLine = new THREE.MeshBasicMaterial({ color: 0x8de3dc });
+  const tabletAccent = new THREE.MeshBasicMaterial({ color: 0xf2c37b });
 
-  addMesh(group, new THREE.CapsuleGeometry(0.38, 0.3, 8, 22), pink, [0, 0.56, 0], [0, 0, 0], [1.02, 1, 0.88]);
-  addMesh(group, new THREE.SphereGeometry(0.23, 22, 14), pinkLight, [0, 0.52, 0.28], [0, 0, 0], [1, 1.05, 0.38]);
-  addMesh(group, new THREE.SphereGeometry(0.15, 18, 12), pinkLight, [0, 0.4, 0.32], [0, 0, 0], [1.08, 0.82, 0.26]);
+  addMesh(group, new THREE.CapsuleGeometry(0.4, 0.34, 8, 22), pink, [0, 0.62, 0], [0, 0, 0], [1.05, 0.98, 0.9]);
+  addMesh(group, new THREE.SphereGeometry(0.24, 24, 16), pinkLight, [0, 0.56, 0.31], [0, 0, 0], [1, 1.05, 0.42]);
+  addMesh(group, new THREE.SphereGeometry(0.16, 20, 14), pinkLight, [0, 0.43, 0.36], [0, 0, 0], [1.12, 0.8, 0.26]);
+
+  addMesh(group, new RoundedBoxGeometry(0.27, 0.46, 0.08, 4, 0.06), rose, [-0.19, 0.66, 0.31], [0.04, 0, 0.12]);
+  addMesh(group, new RoundedBoxGeometry(0.27, 0.46, 0.08, 4, 0.06), rose, [0.19, 0.66, 0.31], [0.04, 0, -0.12]);
+  addMesh(group, new THREE.ConeGeometry(0.065, 0.14, 3), cream, [-0.07, 0.82, 0.36], [0, 0, -0.45]);
+  addMesh(group, new THREE.ConeGeometry(0.065, 0.14, 3), cream, [0.07, 0.82, 0.36], [0, 0, 0.45]);
+  addMesh(group, new THREE.SphereGeometry(0.05, 14, 10), coral, [-0.055, 0.69, 0.39], [0, 0, 0], [1.15, 0.72, 0.5]);
+  addMesh(group, new THREE.SphereGeometry(0.05, 14, 10), coral, [0.055, 0.69, 0.39], [0, 0, 0], [1.15, 0.72, 0.5]);
+  addMesh(group, new THREE.SphereGeometry(0.035, 12, 8), coral, [0, 0.69, 0.4]);
 
   const head = new THREE.Group();
-  head.position.set(0, 1.09, 0.04);
+  head.position.set(0, 1.27, 0.04);
   group.add(head);
-  addMesh(head, new THREE.SphereGeometry(0.37, 34, 24), pink, [0, 0, 0], [0, 0, 0], [1.08, 0.96, 0.96]);
+  addMesh(head, new THREE.SphereGeometry(0.36, 32, 22), pink, [0, 0, 0], [0, 0, 0], [1.04, 0.96, 0.96]);
+  addMesh(head, new THREE.ConeGeometry(0.13, 0.25, 16), pink, [-0.235, 0.31, 0], [0, 0.18, -0.18]);
+  addMesh(head, new THREE.ConeGeometry(0.13, 0.25, 16), pink, [0.235, 0.31, 0], [0, -0.18, 0.18]);
+  addMesh(head, new THREE.ConeGeometry(0.075, 0.15, 16), pinkDark, [-0.235, 0.3, 0.025], [0, 0.18, -0.18]);
+  addMesh(head, new THREE.ConeGeometry(0.075, 0.15, 16), pinkDark, [0.235, 0.3, 0.025], [0, -0.18, 0.18]);
 
-  const earGeo = new THREE.CapsuleGeometry(0.09, 0.12, 4, 12);
-  const earL = addMesh(head, earGeo, pink, [-0.27, 0.25, 0.01], [0.16, 0, 0.48], [1.15, 0.82, 0.5]);
-  const earR = addMesh(head, earGeo.clone(), pink, [0.27, 0.25, 0.01], [0.16, 0, -0.48], [1.15, 0.82, 0.5]);
-  addMesh(earL, new THREE.CapsuleGeometry(0.052, 0.075, 4, 10), pinkDark, [0, 0.015, 0.045], [0, 0, 0], [1, 0.9, 0.28]);
-  addMesh(earR, new THREE.CapsuleGeometry(0.052, 0.075, 4, 10), pinkDark, [0, 0.015, 0.045], [0, 0, 0], [1, 0.9, 0.28]);
+  addMesh(head, new THREE.SphereGeometry(0.07, 18, 14), cream, [-0.13, 0.065, 0.3], [0, 0, 0], [1, 1.16, 0.48]);
+  addMesh(head, new THREE.SphereGeometry(0.07, 18, 14), cream, [0.13, 0.065, 0.3], [0, 0, 0], [1, 1.16, 0.48]);
+  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), ink, [-0.13, 0.055, 0.335], [0, 0, 0], [1, 1.08, 0.62]);
+  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), ink, [0.13, 0.055, 0.335], [0, 0, 0], [1, 1.08, 0.62]);
+  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [-0.115, 0.075, 0.37]);
+  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [0.145, 0.075, 0.37]);
 
-  const curl = addMesh(head, new THREE.TorusGeometry(0.055, 0.012, 6, 20, Math.PI * 1.55), pinkDark, [0, 0.38, 0.02], [Math.PI / 2, 0.2, 0.2]);
-  curl.scale.set(0.8, 0.8, 1);
+  addMesh(head, new THREE.CircleGeometry(0.065, 20), blush, [-0.25, -0.06, 0.335], [0, 0, 0], [1, 0.58, 1]);
+  addMesh(head, new THREE.CircleGeometry(0.065, 20), blush, [0.25, -0.06, 0.335], [0, 0, 0], [1, 0.58, 1]);
 
-  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), eye, [-0.12, 0.065, 0.333], [0, 0, 0], [0.88, 1.22, 0.5]);
-  addMesh(head, new THREE.SphereGeometry(0.047, 16, 12), eye, [0.12, 0.065, 0.333], [0, 0, 0], [0.88, 1.22, 0.5]);
-  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [-0.108, 0.084, 0.364]);
-  addMesh(head, new THREE.SphereGeometry(0.016, 12, 8), cream, [0.132, 0.084, 0.364]);
-  addMesh(head, new THREE.SphereGeometry(0.007, 10, 6), cream, [-0.125, 0.047, 0.365]);
-  addMesh(head, new THREE.SphereGeometry(0.007, 10, 6), cream, [0.115, 0.047, 0.365]);
+  addMesh(head, new THREE.CylinderGeometry(0.155, 0.155, 0.1, 24), pinkDark, [0, -0.065, 0.345], [Math.PI / 2, 0, 0], [1.08, 1, 0.78]);
+  addMesh(head, new THREE.SphereGeometry(0.024, 12, 8), ink, [-0.055, -0.065, 0.4], [0, 0, 0], [1, 1.2, 0.45]);
+  addMesh(head, new THREE.SphereGeometry(0.024, 12, 8), ink, [0.055, -0.065, 0.4], [0, 0, 0], [1, 1.2, 0.45]);
+  addMesh(head, new THREE.TorusGeometry(0.048, 0.008, 6, 18, Math.PI), ink, [0, -0.155, 0.39], [0, 0, Math.PI]);
 
-  addMesh(head, new THREE.CircleGeometry(0.07, 20), blush, [-0.245, -0.065, 0.34], [0, 0, 0], [1, 0.56, 1]);
-  addMesh(head, new THREE.CircleGeometry(0.07, 20), blush, [0.245, -0.065, 0.34], [0, 0, 0], [1, 0.56, 1]);
+  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.2, 4, 10), pink, [-0.38, 0.66, 0.12], [0.58, 0, 0.42]);
+  addMesh(group, new THREE.CapsuleGeometry(0.09, 0.2, 4, 10), pink, [0.38, 0.66, 0.12], [0.58, 0, -0.42]);
+  addMesh(group, new THREE.SphereGeometry(0.1, 14, 10), pinkDark, [-0.4, 0.55, 0.2], [0, 0, 0], [1, 0.82, 0.82]);
+  addMesh(group, new THREE.SphereGeometry(0.1, 14, 10), pinkDark, [0.4, 0.55, 0.2], [0, 0, 0], [1, 0.82, 0.82]);
+  addMesh(group, new THREE.CapsuleGeometry(0.135, 0.16, 4, 10), pink, [-0.23, 0.16, 0.04], [0, 0, 0.04]);
+  addMesh(group, new THREE.CapsuleGeometry(0.135, 0.16, 4, 10), pink, [0.23, 0.16, 0.04], [0, 0, -0.04]);
+  addMesh(group, new THREE.SphereGeometry(0.14, 16, 10), pinkDark, [-0.23, 0.045, 0.12], [0, 0, 0], [1.15, 0.48, 1.25]);
+  addMesh(group, new THREE.SphereGeometry(0.14, 16, 10), pinkDark, [0.23, 0.045, 0.12], [0, 0, 0], [1.15, 0.48, 1.25]);
 
-  addMesh(head, new THREE.SphereGeometry(0.155, 22, 14), pinkDark, [0, -0.07, 0.345], [0, 0, 0], [1.12, 0.74, 0.58]);
-  addMesh(head, new THREE.SphereGeometry(0.022, 12, 8), eye, [-0.05, -0.064, 0.425], [0, 0, 0], [1, 1.08, 0.4]);
-  addMesh(head, new THREE.SphereGeometry(0.022, 12, 8), eye, [0.05, -0.064, 0.425], [0, 0, 0], [1, 1.08, 0.4]);
-  addMesh(head, new THREE.TorusGeometry(0.045, 0.008, 6, 18, Math.PI), rose, [0, -0.155, 0.397], [0, 0, Math.PI]);
-
-  addMesh(group, new THREE.CapsuleGeometry(0.085, 0.19, 4, 10), pink, [-0.35, 0.6, 0.11], [0.56, 0, 0.4]);
-  addMesh(group, new THREE.CapsuleGeometry(0.085, 0.19, 4, 10), pink, [0.35, 0.6, 0.11], [0.56, 0, -0.4]);
-  addMesh(group, new THREE.SphereGeometry(0.095, 14, 10), pinkDark, [-0.38, 0.49, 0.19], [0, 0, 0], [1, 0.82, 0.82]);
-  addMesh(group, new THREE.SphereGeometry(0.095, 14, 10), pinkDark, [0.38, 0.49, 0.19], [0, 0, 0], [1, 0.82, 0.82]);
-  addMesh(group, new THREE.CapsuleGeometry(0.125, 0.14, 4, 10), pink, [-0.18, 0.14, 0.03]);
-  addMesh(group, new THREE.CapsuleGeometry(0.125, 0.14, 4, 10), pink, [0.18, 0.14, 0.03]);
-  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), pinkDark, [-0.18, 0.035, 0.1], [0, 0, 0], [1.12, 0.48, 1.2]);
-  addMesh(group, new THREE.SphereGeometry(0.13, 16, 10), pinkDark, [0.18, 0.035, 0.1], [0, 0, 0], [1.12, 0.48, 1.2]);
-
-  addMesh(group, new THREE.TorusGeometry(0.17, 0.028, 6, 24, Math.PI), cream, [0, 0.82, 0.31], [0, 0, Math.PI]);
-  addMesh(group, new THREE.SphereGeometry(0.045, 12, 8), coral, [-0.055, 0.79, 0.35], [0, 0, 0], [1.3, 0.7, 0.5]);
-  addMesh(group, new THREE.SphereGeometry(0.045, 12, 8), coral, [0.055, 0.79, 0.35], [0, 0, 0], [1.3, 0.7, 0.5]);
-  addMesh(group, new THREE.SphereGeometry(0.032, 12, 8), coral, [0, 0.79, 0.36]);
-
-  const tail = addMesh(group, new THREE.TorusGeometry(0.075, 0.02, 8, 20, Math.PI * 1.45), pinkDark, [0, 0.58, -0.43], [Math.PI / 2, 0.3, 0]);
+  const tail = addMesh(group, new THREE.TorusGeometry(0.08, 0.022, 8, 24, Math.PI * 1.45), pinkDark, [0, 0.64, -0.43], [Math.PI / 2, 0.3, 0]);
   tail.scale.set(0.9, 0.9, 0.8);
 
   const board = new THREE.Group();
-  board.position.set(0.47, 0.69, 0.38);
+  board.position.set(0.48, 0.78, 0.38);
   board.rotation.set(-0.12, -0.18, -0.12);
   group.add(board);
-  place(new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.4, 0.05, 4, 0.045), rose), board, [0, 0, 0]);
-  addMesh(board, new THREE.PlaneGeometry(0.24, 0.29), tablet, [0, 0, 0.031]);
-  addMesh(board, new THREE.BoxGeometry(0.16, 0.016, 0.012), tabletLine, [0, 0.07, 0.04]);
-  addMesh(board, new THREE.BoxGeometry(0.11, 0.013, 0.012), tabletAccent, [-0.025, 0.02, 0.04]);
-  addMesh(board, new THREE.BoxGeometry(0.14, 0.013, 0.012), tabletLine, [0, -0.03, 0.04]);
+  place(new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.42, 0.05, 4, 0.045), rose), board, [0, 0, 0]);
+  addMesh(board, new THREE.PlaneGeometry(0.26, 0.3), tablet, [0, 0, 0.031]);
+  addMesh(board, new THREE.BoxGeometry(0.17, 0.016, 0.012), tabletLine, [0, 0.075, 0.04]);
+  addMesh(board, new THREE.BoxGeometry(0.12, 0.013, 0.012), tabletAccent, [-0.025, 0.02, 0.04]);
+  addMesh(board, new THREE.BoxGeometry(0.15, 0.013, 0.012), tabletLine, [0, -0.03, 0.04]);
 
   group.userData.parts = { head, board, tail, body: group };
   return finishCharacter(group, 'pig');

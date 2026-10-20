@@ -1,0 +1,68 @@
+
+> cattery@0.4.0 build
+> astro build && pagefind --site dist ; @'
+
+21:38:42 [content] Syncing content
+21:38:42 [content] Synced content
+21:38:42 [types] Generated 437ms
+21:38:42 [build] output: "static"
+21:38:42 [build] mode: "static"
+21:38:42 [build] directory: D:\CatBok\dist\
+21:38:42 [build] Collecting build info...
+21:38:42 [build] ✓ Completed in 454ms.
+21:38:42 [build] Building static entrypoints...
+21:38:43 [vite] ✓ built in 759ms
+21:38:43 [build] ✓ Completed in 783ms.
+
+ building client (vite) 
+21:38:43 [vite] transforming...
+21:38:44 [vite] ✓ 24 modules transformed.
+21:38:44 [vite] rendering chunks...
+21:38:44 [vite] computing gzip size...
+21:38:44 [vite] dist/_astro/index.astro_astro_type_script_index_0_lang.DTp26BvX.js    2.63 kB │ gzip:   1.24 kB
+21:38:44 [vite] dist/_astro/room.C3xT20EK.js                                        679.33 kB │ gzip: 183.82 kB
+21:38:44 [WARN] [vite] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+21:38:44 [vite] ✓ built in 999ms
+
+ generating static routes 
+21:38:44 ▶ src/pages/404.astro
+21:38:44   └─ /404.html (+11ms) 
+21:38:44 ▶ src/pages/about.astro
+21:38:44   └─ /about/index.html (+12ms) 
+21:38:44 ▶ src/pages/archive.astro
+21:38:44   └─ /archive/index.html (+8ms) 
+21:38:44 ▶ src/pages/index.astro
+21:38:44   └─ /index.html (+9ms) 
+21:38:44 ▶ src/pages/notes/[...slug].astro
+21:38:44   ├─ /notes/why-static-blog/index.html (+4ms) 
+21:38:44   ├─ /notes/cat-on-keyboard/index.html (+2ms) 
+21:38:44   └─ /notes/slow-update/index.html (+2ms) 
+21:38:44 ▶ src/pages/notes/index.astro
+21:38:44   └─ /notes/index.html (+4ms) 
+21:38:44 ▶ src/pages/projects/[slug].astro
+21:38:44   └─ /projects/miao-secretary/index.html (+4ms) 
+21:38:44 ▶ src/pages/projects/index.astro
+21:38:44   └─ /projects/index.html (+10ms) 
+21:38:44 λ src/pages/robots.txt.ts
+21:38:44   └─ /robots.txt (+1ms) 
+21:38:44 λ src/pages/rss.xml.ts
+21:38:44   └─ /rss.xml (+9ms) 
+21:38:44 ▶ src/pages/search.astro
+21:38:44   └─ /search/index.html (+2ms) 
+21:38:44 ▶ src/pages/tags/[tag].astro
+21:38:44   ├─ /tags/随笔/index.html (+3ms) 
+21:38:44   ├─ /tags/技术/index.html (+2ms) 
+21:38:44   ├─ /tags/建站/index.html (+2ms) 
+21:38:44   ├─ /tags/猫/index.html (+1ms) 
+21:38:44   └─ /tags/生活/index.html (+2ms) 
+21:38:44 ▶ src/pages/tags/index.astro
+21:38:44   └─ /tags/index.html (+2ms) 
+21:38:44 ✓ Completed in 185ms.
+
+21:38:44 [@astrojs/sitemap] `sitemap-index.xml` created at `dist`
+21:38:44 [build] 17 page(s) built in 2.47s
+21:38:44 [build] Complete!
