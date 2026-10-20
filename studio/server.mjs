@@ -156,7 +156,9 @@ async function deleteNote(id) {
   }
   await fs.mkdir(TRASH_ROOT, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  await fs.rename(source, path.join(TRASH_ROOT, `${id}-${stamp}.md`));
+  const file = `${id}-${stamp}.md`;
+  await fs.rename(source, path.join(TRASH_ROOT, file));
+  return { id, file };
 }
 
 function run(command, args, options = {}) {
@@ -371,7 +373,7 @@ async function serveStatic(req, res, urlPath) {
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
       'Content-Length': stat.size,
-      'Cache-Control': path.extname(filePath) === '.html' ? 'no-store' : 'public, max-age=60',
+      'Cache-Control': base === STUDIO_ROOT ? 'no-store' : (path.extname(filePath) === '.html' ? 'no-store' : 'public, max-age=60'),
     });
     if (req.method === 'HEAD') return res.end();
     createReadStream(filePath).pipe(res);
@@ -428,8 +430,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { note: await saveNote(input, false) });
     }
     if (req.method === 'DELETE' && pathname.startsWith('/api/notes/')) {
-      await deleteNote(decodeURIComponent(pathname.slice('/api/notes/'.length)));
-      return json(res, 200, { ok: true });
+      const deleted = await deleteNote(decodeURIComponent(pathname.slice('/api/notes/'.length)));
+      return json(res, 200, { ok: true, ...deleted });
     }
     if (req.method === 'POST' && pathname === '/api/preview') {
       const { markdown } = await readJson(req);

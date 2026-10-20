@@ -187,13 +187,20 @@ const publish = async () => {
   finally { setBusy(false); }
 };
 const deleteCurrent = async () => {
-  if (!currentId || !window.confirm(`确定删除《${fields.title.value}》吗？文件会移入本地回收站。`)) return;
+  if (!currentId || !window.confirm(`确定删除《${fields.title.value}》吗？文件会先移入本地回收站。`)) return;
   setBusy(true);
   try {
-    await api(`/api/notes/${encodeURIComponent(currentId)}`, { method: 'DELETE' });
+    const deleted = await api(`/api/notes/${encodeURIComponent(currentId)}`, { method: 'DELETE' });
     currentId = null; setDirty(false); editorPanel.hidden = true; emptyState.hidden = false;
-    await loadNotes(); showToast('文章已移入 .content-trash，Git 历史仍可恢复');
-  } catch (error) { showToast(error.message); }
+    noteFilter = 'trash'; syncFilterButtons(); await loadNotes(); await loadTrash();
+    const syncOnline = window.confirm('现在只把这个删除同步到 Gitee/GitHub 吗？\n\n只会提交这一篇文章的删除，不会提交其他文章、草稿或图片。');
+    if (syncOnline && deleted.file) {
+      const result = await api('/api/trash/publish-delete', { method: 'POST', body: JSON.stringify({ file: deleted.file }) });
+      showPublishResult(result); await refreshGitStatus();
+    } else {
+      showToast('文章只在本地回收站，线上仓库尚未删除');
+    }
+  } catch (error) { showPublishResult(error.data, error); }
   finally { setBusy(false); }
 };
 const restoreTrashItem = async (file) => {
