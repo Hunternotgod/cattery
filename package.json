@@ -11,7 +11,8 @@
     "repos:sync": "node scripts/sync-gitee-repos.mjs",
     "release:sync": "node scripts/sync-miao-release.mjs",
     "content:sync": "npm run repos:sync && npm run release:sync && npm run contributions:sync",
-    "contributions:sync": "node scripts/sync-gitee-contributions.mjs"
+    "contributions:sync": "node scripts/sync-gitee-contributions.mjs",
+    "studio": "node studio/server.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
@@ -26,6 +27,9 @@
   "devDependencies": {
     "@astrojs/check": "0.9.4",
     "@types/three": "^0.186.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.1.1",
+    "sharp": "^0.35.5",
     "typescript": "^5.9.3"
   },
   "overrides": {

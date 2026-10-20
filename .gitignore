@@ -9,3 +9,4 @@ dist/
 preview-*.png
 .qa/
 artifacts/
+.content-trash/

@@ -23,6 +23,14 @@ npm run dev
 
 打开 <http://localhost:4321>。
 
+## 本地写作后台
+
+```bash
+npm run studio
+```
+
+打开 <http://127.0.0.1:4322/studio/>。后台只监听本机，支持新建、编辑、删除、图片上传、Markdown 预览、构建预览和发布双推。前台预览位于 <http://127.0.0.1:4322/>，需要先点击“构建预览”。
+
 ## 构建
 
 ```bash
@@ -80,11 +88,11 @@ npm run repos:sync
 
 ### 每日自动更新（不需要后端）
 
-GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync`，更新静态 JSON 快照；只有文件发生变化时才提交，EdgeOne Pages 随后按 Git 集成重新构建。
+GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync`，更新静态 JSON 快照；只有文件发生变化时才提交，先把 commit 推送到 Gitee 主仓库，再推送到 GitHub 镜像，最后由 EdgeOne Pages 重新构建。
 
 需要在 GitHub 仓库中配置：
 
-- Secret `GITEE_TOKEN`：可选，用于提高 Gitee API 限额。
+- Secret `GITEE_TOKEN`：用于提高 Gitee API 限额，并允许 Actions 把快照 commit 回推到 Gitee 主仓库。
 - EdgeOne Pages 连接该 GitHub 仓库，并启用推送自动部署。
 
 这个流程没有常驻服务器、数据库或运行时 API。
@@ -102,6 +110,13 @@ GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync
 ## 角色与 Tripo
 
 当前三只角色为程序化模型，不依赖外部生成服务。以后配置 `TRIPO_API_KEY` 后，可以通过现有角色接口替换为 Tripo 生成的 GLB，不需要重写场景和镜头。
+
+## 双仓库发布
+
+- Gitee 是主仓库。
+- GitHub 是只读镜像，也是 EdgeOne Pages 的部署来源。
+- 本地默认 `git push` 会同时推送两个仓库。
+- 写作后台发布顺序固定为：检查与构建 → 提交 → 推 Gitee → 推 GitHub → EdgeOne 自动部署。
 
 ## 部署到 EdgeOne Pages
 

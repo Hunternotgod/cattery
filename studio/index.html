@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cattery studio</title>
+    <link rel="stylesheet" href="/studio/studio.css" />
+  </head>
+  <body>
+    <header class="studio-header">
+      <div class="studio-brand">
+        <span class="studio-mark">c</span>
+        <div><strong>cattery studio</strong><small>LOCAL WRITING DESK</small></div>
+      </div>
+      <div class="studio-status" data-git-status>正在读取 Git 状态…</div>
+      <div class="studio-actions">
+        <a class="studio-button ghost" href="/" target="_blank" rel="noreferrer">打开网站</a>
+        <button class="studio-button ghost" id="build-button" type="button">构建预览</button>
+        <button class="studio-button primary" id="publish-quick" type="button">发布并推送</button>
+      </div>
+    </header>
+
+    <div class="studio-shell">
+      <aside class="studio-sidebar">
+        <button class="new-note-button" id="new-note" type="button"><span>＋</span> 新建文章</button>
+        <label class="search-field"><span aria-hidden="true">⌕</span><input id="note-search" type="search" placeholder="搜索文章…" /></label>
+        <div class="note-list" id="note-list"></div>
+        <div class="sidebar-foot">
+          <span class="local-dot"></span>
+          <span>仅本机可访问 · 不部署后台</span>
+        </div>
+      </aside>
+
+      <main class="studio-workspace">
+        <section class="studio-empty" id="studio-empty">
+          <p class="eyebrow">cattery / local notes</p>
+          <h1>把想写的先放进来。</h1>
+          <p>这个后台只运行在你这台电脑上。文章仍然是 Markdown，发布时会先推 Gitee，再推 GitHub 镜像。</p>
+          <button class="studio-button primary" id="empty-new" type="button">写一篇新文章</button>
+        </section>
+
+        <form class="editor-panel" id="editor-panel" hidden>
+          <div class="editor-heading">
+            <div>
+              <p class="eyebrow" id="editor-eyebrow">draft / local</p>
+              <h1 id="editor-heading">新建文章</h1>
+            </div>
+            <div class="editor-heading-actions">
+              <a class="text-button" id="open-article" href="#" target="_blank" rel="noreferrer" hidden>查看文章</a>
+              <button class="danger-button" id="delete-note" type="button" hidden>删除</button>
+            </div>
+          </div>
+
+          <div class="meta-grid">
+            <label class="field span-2"><span>标题</span><input id="note-title" name="title" required placeholder="今天的标题" /></label>
+            <label class="field"><span>文件名 / URL</span><input id="note-id" name="id" required pattern="[a-z0-9][a-z0-9-]*" placeholder="my-new-note" /></label>
+            <label class="field"><span>发布日期</span><input id="note-date" name="pubDate" type="date" required /></label>
+            <label class="field"><span>更新日期（可选）</span><input id="note-updated" name="updatedDate" type="date" /></label>
+            <label class="field"><span>标签（逗号分隔）</span><input id="note-tags" name="tags" placeholder="技术, 建站, 生活" /></label>
+            <label class="field span-2"><span>摘要</span><input id="note-description" name="description" required placeholder="一句话介绍这篇文章" /></label>
+            <label class="draft-toggle"><input id="note-draft" name="draft" type="checkbox" /> <span>保存为草稿，暂不对读者发布</span></label>
+          </div>
+
+          <div class="editor-toolbar">
+            <span class="toolbar-label">Markdown</span>
+            <div>
+              <button class="text-button" id="upload-image" type="button">插入图片</button>
+              <input id="image-input" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden />
+              <button class="text-button" id="preview-refresh" type="button">刷新预览</button>
+            </div>
+          </div>
+
+          <div class="editor-grid">
+            <div class="editor-column">
+              <textarea id="note-body" name="body" spellcheck="false" placeholder="从这里开始写 Markdown…"></textarea>
+            </div>
+            <article class="preview-pane prose" id="preview-pane">
+              <p class="preview-placeholder">预览会显示在这里。</p>
+            </article>
+          </div>
+
+          <footer class="editor-footer">
+            <div class="save-state" id="save-state"><span class="state-dot"></span><span>已保存</span></div>
+            <div class="editor-footer-actions">
+              <span class="shortcut-hint">Ctrl/Cmd + S 保存</span>
+              <button class="studio-button ghost" id="save-draft" type="button">保存草稿</button>
+              <button class="studio-button primary" id="publish-note" type="button">发布并推送</button>
+            </div>
+          </footer>
+        </form>
+      </main>
+    </div>
+
+    <div class="studio-toast" id="studio-toast" role="status" aria-live="polite" hidden></div>
+
+    <dialog class="publish-dialog" id="publish-dialog">
+      <div class="publish-dialog-inner">
+        <div class="publish-dialog-head">
+          <div><p class="eyebrow">publish pipeline</p><h2 id="publish-title">发布结果</h2></div>
+          <button class="text-button" id="publish-close" type="button">关闭</button>
+        </div>
+        <ol class="publish-steps" id="publish-steps"></ol>
+        <pre class="publish-log" id="publish-log" hidden></pre>
+      </div>
+    </dialog>
+
+    <script type="module" src="/studio/studio.js"></script>
+  </body>
+</html>
