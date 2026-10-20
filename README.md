@@ -51,14 +51,17 @@ draft: false              # true 则不会出现在站点、RSS 和 sitemap 中
 - 首页文案：`src/pages/index.astro`
 - 关于页面：`src/pages/about.astro`
 - 样式：`src/styles/global.css`
+- 分享卡片：`public/og-default.png`
 
 ## 部署到 EdgeOne Pages
 
 1. 把仓库推到 GitHub / GitLab（以 EdgeOne Pages 当前支持的平台为准），并在 EdgeOne Pages 导入项目。
-2. 构建命令：`npm run build`
-3. 输出目录：`dist`
-4. 环境变量：`SITE_URL=https://你的域名`
-5. 绑定自定义域名前，需要完成 ICP 备案。
+2. Node 版本：22
+3. 构建命令：`npm run build`
+4. 输出目录：`dist`
+5. 环境变量：`SITE_URL=https://你的域名`
+6. 绑定自定义域名前，需要完成 ICP 备案。
 
 没有域名时，可以先用 EdgeOne Pages 提供的默认域名预览。
 
+> 部署前务必设置 `SITE_URL`，否则 canonical、RSS、sitemap 和分享卡片里仍然是示例域名。
