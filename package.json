@@ -1,23 +1,28 @@
 {
   "name": "cattery",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "repos:sync": "node scripts/sync-gitee-repos.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
-    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource-variable/public-sans": "^5.3.0",
     "astro": "^5.18.2",
-    "pagefind": "^1.5.2"
+    "gsap": "^3.15.0",
+    "pagefind": "^1.5.2",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.4",
+    "@types/three": "^0.186.0",
     "typescript": "^5.9.3"
   },
   "overrides": {
@@ -25,5 +30,6 @@
   },
   "engines": {
     "node": ">=22.11.0"
-  }
+  },
+  "description": "肥猫叉烧的个人作品集：项目、代码仓库、笔记，以及猫、猪和柯基一起住的 3D 小房间。"
 }

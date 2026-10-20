@@ -1,14 +1,14 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-export type Post = CollectionEntry<'posts'>;
+export type Note = CollectionEntry<'notes'>;
 
-export async function getPublishedPosts(): Promise<Post[]> {
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
-  return sortPosts(posts);
+export async function getPublishedNotes(): Promise<Note[]> {
+  const notes = await getCollection('notes', ({ data }) => !data.draft);
+  return sortNotes(notes);
 }
 
-export function sortPosts(posts: Post[]): Post[] {
-  return [...posts].sort(
+export function sortNotes(notes: Note[]): Note[] {
+  return [...notes].sort(
     (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
   );
 }
@@ -18,14 +18,6 @@ export function formatDate(date: Date, style: 'long' | 'short' = 'long'): string
     timeZone: 'Asia/Shanghai',
     year: 'numeric',
     month: style === 'long' ? 'long' : '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
-export function formatMonthDay(date: Date): string {
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    month: '2-digit',
     day: '2-digit',
   }).format(date);
 }
@@ -52,6 +44,7 @@ export function formatMonthDayDot(date: Date): string {
     parts.find((part) => part.type === type)?.value ?? '';
   return `${get('month')}.${get('day')}`;
 }
+
 export function readingTime(body: string): number {
   const plain = body
     .replace(/```[\s\S]*?```/g, ' ')
@@ -64,10 +57,10 @@ export function readingTime(body: string): number {
   return Math.max(1, Math.ceil(chineseChars / 400 + words / 200));
 }
 
-export function getAllTags(posts: Post[]): Array<[string, number]> {
+export function getAllTags(notes: Note[]): Array<[string, number]> {
   const counts = new Map<string, number>();
-  for (const post of posts) {
-    for (const tag of post.data.tags) {
+  for (const note of notes) {
+    for (const tag of note.data.tags) {
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
   }
@@ -80,7 +73,6 @@ export function tagHref(tag: string): string {
   return `/tags/${encodeURIComponent(tag)}/`;
 }
 
-export function postHref(post: Post): string {
-  return `/posts/${post.id}/`;
+export function noteHref(note: Note): string {
+  return `/notes/${note.id}/`;
 }
-

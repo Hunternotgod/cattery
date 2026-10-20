@@ -2,52 +2,59 @@
 
 ## Brief
 
-A personal blog for Chinese readers, written by someone who codes and lives with cats. The site should feel like an independent publication, not a template: quiet enough to read for a long time, but with one memorable visual idea.
+A personal portfolio for 肥猫叉烧, made for Chinese readers. It should feel like a small independent publication and a place you can walk into, not a template blog. The cat, pig, and corgi are permanent residents, not decoration.
 
 ## Concept
 
-**A catalogue of a small life.** The blog is presented as a precise, well-kept index: dates, titles, topics, and short notes laid out like a printed catalogue. The cat motif appears once, strongly, as a geometric cat-eye mark rather than as cute decoration everywhere.
+**A 3D room for a small life.** The homepage is a scroll-through studio: a cat engineer at the workbench, a pig boss at the bookshelf, and a corgi troublemaker in the notes corner. The 2D layer is screen-print inspired; the 3D characters are smooth cartoon objects living inside it.
 
 ## Tokens
 
 | Role | Light | Dark |
 |---|---|---|
-| Paper | `#F1F2ED` | `#101116` |
-| Raised paper | `#FBFBF7` | `#181A1F` |
-| Ink | `#16171A` | `#F1F2ED` |
-| Ink soft | `#5D6168` | `#B6BAC0` |
-| Ink faint | `#686C73` | `#9A9FA7` |
-| Line | `#D7D9D2` | `#2A2D33` |
-| Cobalt | `#2B4BFF` | `#8D9EFF` |
-| Mint | `#BDF4E4` | `#1E3A34` |
-| Mint soft | `#E4FBF5` | `#182B27` |
+| Paper | `#F2EBDD` | `#171310` |
+| Raised paper | `#FAF4E8` | `#211B16` |
+| Ink | `#191714` | `#F4EDE1` |
+| Ink soft | `#5F5A52` | `#C9BFAE` |
+| Ink faint | `#746D62` | `#A99E8D` |
+| Line | `#D8CEBD` | `#3A2F26` |
+| Tomato | `#D9472B` | `#FF6B4A` |
+| Cat | `#F39A3D` | `#F5A44D` |
+| Pig | `#F3A7B9` | `#F3A7B9` |
+| Corgi | `#E8792B` | `#EF8A38` |
+| Corgi cream | `#F7E8D4` | `#F7E8D4` |
 
 ## Type
 
-- Display and UI: **Space Grotesk Variable**, self-hosted through Fontsource.
-- Chinese body: system sans (`PingFang SC`, `Hiragino Sans GB`, `Microsoft YaHei`, `Noto Sans SC`).
+- Display: **Archivo Variable**, 750–850 for the wordmark and headings.
+- Body/UI: **Public Sans Variable** + system Chinese sans.
 - Code: system monospace.
-- Body size 17–18px, line-height 1.85; article line length capped around 700px.
+- Body size 17px, line-height 1.75; article column capped at 700px.
 
 ## Layout
 
-- 12-column editorial grid, max width 1200px.
-- Asymmetric hero: oversized wordmark on the left, cat-eye composition on the right.
-- Posts are index rows, not cards: date / title + description / reading time + tags.
-- Article pages use a 700px reading column plus a slim TOC rail.
-- Archive uses a large year marker beside its list.
+- 3D room only on the homepage; all other pages use the same screen-print system without WebGL.
+- Five homepage stations: entry, cat workbench, pig shelf, corgi notes, window/about.
+- Sticky canvas with HTML paper panels in normal document flow.
+- Project pages are long-form case studies; notes are index rows; archive uses large year markers.
 
-## Signature
+## Characters
 
-- Geometric cat-eye mark, used in the header, favicon, and hero.
-- The hero eye blinks once on load; this is the only non-user-triggered motion.
-- Cobalt is the single accent; mint is a surface, not a second brand color.
-- No warm cream + terracotta, no uppercase eyebrows, no pill-shaped card grid, no arrow appended to every link.
+- **猫工程师**: orange cat, goggles and cap, workbench and 喵秘书.
+- **猪老板**: pink pig, tie and clipboard, repo shelf and review.
+- **柯基捣蛋鬼**: orange/cream corgi, scattered paper, notes and surprises.
 
-## Interaction
+## Motion
 
-- Nav links grow a cobalt underline on hover.
-- Post rows highlight with a mint wash; the title turns cobalt.
-- Theme toggle rotates its icon and preserves the choice in `localStorage`.
-- All motion is disabled under `prefers-reduced-motion`.
+- GSAP ScrollTrigger drives the camera through the room.
+- Idle loops: cat typing/tail, pig nodding, corgi bouncing.
+- Pointer parallax on desktop.
+- One tomato page-wipe transition; desktop cursor ring; primary CTA magnetic shift.
+- `prefers-reduced-motion` disables all motion and shows the static poster.
 
+## Constraints
+
+- Mobile keeps the full 3D scene at lower quality; WebGL failure or sustained low performance falls back to the poster.
+- No runtime Gitee request: the build reads a synced JSON snapshot.
+- No comments, analytics, audio, or backend.
+- All meaningful content must remain readable HTML.

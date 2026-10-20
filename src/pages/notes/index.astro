@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteCard from '../../components/NoteCard.astro';
+import Mascot from '../../components/Mascot.astro';
+import { getPublishedNotes } from '../../utils/notes';
+
+const notes = await getPublishedNotes();
+---
+<BaseLayout title="笔记" description="肥猫叉烧的笔记：代码、工具、阅读、猫和日常生活。">
+  <div class="container">
+    <header class="page-head page-head-notes">
+      <h1 class="page-title">笔记</h1>
+      <p class="page-description">
+        写代码时想明白的事、读到的好东西，以及生活里那些不大却值得记下来的瞬间。
+      </p>
+    </header>
+
+    <div class="notes-intro">
+      <Mascot kind="corgi" class="notes-intro-mascot" />
+      <p>柯基把纸堆弄乱了。这里是从里面捡出来的几页。</p>
+    </div>
+
+    <section class="note-index">
+      {notes.map((note) => <NoteCard note={note} />)}
+    </section>
+  </div>
+</BaseLayout>

@@ -1,55 +1,74 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import CatMark from '../components/CatMark.astro';
+import Mascot from '../components/Mascot.astro';
+import { SITE } from '../data/site';
 ---
-<BaseLayout title="关于" description="关于 cattery 和这个博客背后的人。">
+<BaseLayout title="关于" description="关于 cattery、肥猫叉烧，以及猫工程师、猪老板和柯基捣蛋鬼。">
   <div class="container">
-    <header class="page-head">
+    <header class="page-head page-head-about">
       <h1 class="page-title">关于</h1>
-      <p class="page-description">一个普通人的个人博客，记录代码、阅读、猫和日常生活。</p>
+      <p class="page-description">
+        一个普通开发者的个人作品集。代码、项目、笔记，还有三只住在房间里的动物。
+      </p>
     </header>
 
-    <div class="about-layout">
-      <article class="prose">
-        <h2>关于这个博客</h2>
+    <section class="about-layout">
+      <div class="about-copy prose">
+        <h2>我是谁</h2>
         <p>
-          cattery 是我给自己留的一块安静地方。这里没有推荐算法，也没有必须追上的热点，
-          只有一些想认真写下来的东西。
+          我是肥猫叉烧，一个喜欢写代码、也喜欢猫的人。平时折腾工具、做小项目，
+          偶尔读书、拍照、散步，然后把过程中的想法整理成文字。
         </p>
         <p>
-          博客用 Astro 构建，文章是 Markdown 文件，部署在静态托管上。
-          这样做的好处是简单、快、可迁移：即使以后换框架，文字仍然属于自己。
+          cattery 不是公司主页，也不是简历。它更像一个开放的工作室：
+          做过的软件放在工作台上，代码仓库排在书架上，没整理好的想法丢在柯基的角落。
         </p>
 
-        <h2>关于我</h2>
+        <h2>这个站怎么来的</h2>
         <p>
-          一个喜欢写代码、也喜欢猫的人。平时会折腾一些工具和小项目，
-          偶尔读书、拍照、散步，然后试着把过程中的想法整理成文字。
+          网站用 Astro 构建，首页是一个用 Three.js 程序化搭建的 3D 房间。
+          项目数据来自 Gitee，笔记是 Markdown，站内搜索由 Pagefind 生成。
+          没有数据库，也没有运行时后端。
         </p>
-        <p>如果你也在做类似的事情，欢迎通过下面的方式找到我。</p>
 
         <h2>联系</h2>
         <p>
-          邮箱：<span>待填写</span><br />
-          GitHub：<span>待填写</span>
+          Gitee：<a href={SITE.giteeUrl} target="_blank" rel="noopener noreferrer">fat-cat-barbecue</a><br />
+          邮箱：<span>{SITE.email}</span>
         </p>
+      </div>
 
-        <blockquote>
-          <p>写作不是为了被看见，而是为了把模糊的想法变清楚。</p>
-        </blockquote>
-      </article>
+      <aside class="about-sidebar">
+        <div class="about-sidebar-block">
+          <p class="section-kicker">residents</p>
+          <h2>房间住户</h2>
+          <div class="mascot-roster">
+            <div class="mascot-roster-item">
+              <Mascot kind="cat" class="mascot-roster-art" />
+              <div><strong>猫工程师</strong><span>项目、调试和凌晨的提交。</span></div>
+            </div>
+            <div class="mascot-roster-item">
+              <Mascot kind="pig" class="mascot-roster-art" />
+              <div><strong>猪老板</strong><span>仓库、审阅和“这个能不能上线”。</span></div>
+            </div>
+            <div class="mascot-roster-item">
+              <Mascot kind="corgi" class="mascot-roster-art" />
+              <div><strong>柯基捣蛋鬼</strong><span>笔记、意外和打翻的纸堆。</span></div>
+            </div>
+          </div>
+        </div>
 
-      <aside class="about-panel">
-        <CatMark class="about-mark" />
-        <h2>这个站</h2>
-        <ul>
-          <li>Astro + Markdown</li>
-          <li>静态部署，无数据库</li>
-          <li>Pagefind 站内搜索</li>
-          <li>深浅色模式</li>
-          <li>RSS 订阅</li>
-        </ul>
+        <div class="about-sidebar-block">
+          <p class="section-kicker">built with</p>
+          <ul class="about-tech">
+            <li>Astro</li>
+            <li>Three.js + GSAP</li>
+            <li>Markdown + Pagefind</li>
+            <li>Gitee API snapshot</li>
+            <li>EdgeOne Pages</li>
+          </ul>
+        </div>
       </aside>
-    </div>
+    </section>
   </div>
 </BaseLayout>

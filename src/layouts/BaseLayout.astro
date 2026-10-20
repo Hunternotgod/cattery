@@ -1,15 +1,17 @@
 ---
-import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/archivo';
+import '@fontsource-variable/public-sans';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { SITE } from '../consts';
+import { SITE } from '../data/site';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
   article?: boolean;
+  home?: boolean;
   publishedTime?: string;
   modifiedTime?: string;
   jsonLd?: Record<string, unknown>;
@@ -20,18 +22,19 @@ const {
   description = SITE.description,
   image = '/og-default.png',
   article = false,
+  home = false,
   publishedTime,
   modifiedTime,
   jsonLd,
 } = Astro.props;
 
-const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} · ${SITE.description}`;
+const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} · ${SITE.tagline}`;
 const base = Astro.site ?? new URL('https://cattery.example.com');
 const canonical = new URL(Astro.url.pathname, base);
 const ogImage = new URL(image, base);
 ---
 <!doctype html>
-<html lang={SITE.lang} data-theme="light">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -50,8 +53,8 @@ const ogImage = new URL(image, base);
     <meta name="description" content={description} />
     <meta name="author" content={SITE.author} />
     <meta name="generator" content={Astro.generator} />
-    <meta name="theme-color" content="#f1f2ed" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#101116" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f2ebdd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171310" media="(prefers-color-scheme: dark)" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -76,8 +79,10 @@ const ogImage = new URL(image, base);
     {jsonLd && <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     <slot name="head" />
   </head>
-  <body>
+  <body class:list={['site-body', { 'home-page': home }]}>
     <a class="skip-link" href="#main">跳到正文</a>
+    <div class="page-wipe" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
     <Header />
     <main id="main">
       <slot />
@@ -87,24 +92,68 @@ const ogImage = new URL(image, base);
       (() => {
         const root = document.documentElement;
         const button = document.getElementById('theme-toggle');
-        if (!button) return;
-        const sync = () => {
+        const header = document.querySelector('.site-header');
+        const syncTheme = () => {
           const dark = root.dataset.theme === 'dark';
-          button.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
-          button.setAttribute('title', dark ? '切换到浅色模式' : '切换到深色模式');
+          button?.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
+          button?.setAttribute('title', dark ? '切换到浅色模式' : '切换到深色模式');
         };
-        button.addEventListener('click', () => {
+        button?.addEventListener('click', () => {
           const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
           root.dataset.theme = next;
           try {
             localStorage.setItem('theme', next);
           } catch {}
-          sync();
+          syncTheme();
         });
-        sync();
+        syncTheme();
+
+        const syncHeader = () => header?.classList.toggle('is-scrolled', window.scrollY > 32);
+        syncHeader();
+        window.addEventListener('scroll', syncHeader, { passive: true });
+
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const finePointer = window.matchMedia('(pointer: fine)').matches;
+        const ring = document.querySelector('.cursor-ring');
+
+        if (finePointer && !reduced && ring instanceof HTMLElement) {
+          let x = window.innerWidth / 2;
+          let y = window.innerHeight / 2;
+          let tx = x;
+          let ty = y;
+          document.addEventListener('pointermove', (event) => {
+            tx = event.clientX;
+            ty = event.clientY;
+          });
+          const loop = () => {
+            x += (tx - x) * 0.18;
+            y += (ty - y) * 0.18;
+            ring.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+            requestAnimationFrame(loop);
+          };
+          loop();
+          document.addEventListener('pointerover', (event) => {
+            const target = event.target instanceof Element ? event.target.closest('a, button, [data-poke]') : null;
+            ring.classList.toggle('is-active', Boolean(target));
+          });
+        }
+
+        document.addEventListener('click', (event) => {
+          const link = event.target instanceof Element ? event.target.closest('a') : null;
+          if (!link || !(link instanceof HTMLAnchorElement)) return;
+          if (link.target || link.hasAttribute('download')) return;
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          const url = new URL(link.href, location.href);
+          if (url.origin !== location.origin) return;
+          if (url.pathname === location.pathname && url.hash) return;
+          if (reduced) return;
+          event.preventDefault();
+          document.body.classList.add('is-leaving');
+          window.setTimeout(() => {
+            location.href = url.href;
+          }, 260);
+        });
       })();
     </script>
   </body>
 </html>
-
-

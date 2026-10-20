@@ -1,19 +1,23 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#f1f2ed"/>
-  <rect x="790" width="410" height="630" fill="#2b4bff"/>
+  <rect width="1200" height="630" fill="#f2ebdd"/>
+  <rect x="0" y="0" width="1200" height="12" fill="#d9472b"/>
+  <text x="76" y="268" font-family="Arial, Helvetica, sans-serif" font-size="176" font-weight="800" fill="#191714" letter-spacing="-12">cattery</text>
+  <text x="82" y="336" font-family="Arial, sans-serif" font-size="30" fill="#5f5a52">projects, notes, and a small room.</text>
+  <line x1="82" y1="382" x2="550" y2="382" stroke="#d9472b" stroke-width="6"/>
+  <text x="82" y="444" font-family="Arial, sans-serif" font-size="22" fill="#746d62" letter-spacing="2">肥猫叉烧的个人作品集</text>
 
-  <text x="80" y="240" font-family="Arial, Helvetica, sans-serif" font-size="154" font-weight="700" fill="#16171a" letter-spacing="-10">cattery</text>
-  <text x="84" y="310" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="28" fill="#5d6168">code, cats, and everyday notes.</text>
-  <line x1="84" y1="358" x2="560" y2="358" stroke="#2b4bff" stroke-width="4" stroke-linecap="round"/>
-  <text x="84" y="416" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="21" fill="#686c73" letter-spacing="2">a personal archive / since 2026</text>
-
-  <g transform="translate(790 0)">
-    <path d="M18 315C62 222 348 222 392 315C348 408 62 408 18 315Z" fill="#f1f2ed"/>
-    <circle cx="205" cy="315" r="62" fill="#bdf4e4"/>
-    <ellipse cx="205" cy="315" rx="16" ry="62" fill="#16171a"/>
-    <circle cx="186" cy="286" r="10" fill="#f1f2ed" opacity="0.75"/>
-    <path d="M44 326 10 316M46 350 14 360M366 326 400 316M364 350 396 360" stroke="#16171a" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
-    <path d="M392 315c20-1 30-14 24-30" stroke="#bdf4e4" stroke-width="4" stroke-linecap="round"/>
+  <g transform="translate(690 90)">
+    <path d="M20 200 180 62l160 138v160H20V200Z" fill="#faf4e8" stroke="#191714" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="146" y="252" width="68" height="108" fill="#d9472b"/>
+    <circle cx="92" cy="200" r="22" fill="#f39a3d"/>
+    <circle cx="180" cy="174" r="22" fill="#f3a7b9"/>
+    <circle cx="268" cy="200" r="22" fill="#e8792b"/>
+    <path d="M76 190 64 160l30 16M108 190l12-30-30 16" fill="#f39a3d" stroke="#191714" stroke-width="4"/>
+    <path d="M154 168 148 142l26 12M206 168l6-26-26 12" fill="#f3a7b9" stroke="#191714" stroke-width="4"/>
+    <path d="M246 190 234 160l30 16M278 190l12-30-30 16" fill="#e8792b" stroke="#191714" stroke-width="4"/>
+    <circle cx="92" cy="200" r="4" fill="#191714"/>
+    <circle cx="180" cy="174" r="4" fill="#191714"/>
+    <circle cx="268" cy="200" r="4" fill="#191714"/>
   </g>
+  <text x="76" y="570" font-family="Arial, sans-serif" font-size="20" fill="#746d62">code / cats / pigs / corgis</text>
 </svg>
-

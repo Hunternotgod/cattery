@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 const isProd = import.meta.env.PROD;
 ---
-<BaseLayout title="搜索" description="搜索 cattery 的文章。">
+<BaseLayout title="搜索" description="搜索 cattery 的项目和笔记。">
   <Fragment slot="head">
     {isProd && <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />}
   </Fragment>
@@ -10,7 +10,7 @@ const isProd = import.meta.env.PROD;
   <div class="container">
     <header class="page-head">
       <h1 class="page-title">搜索</h1>
-      <p class="page-description">输入关键词，查找文章标题和正文中的内容。</p>
+      <p class="page-description">输入关键词，查找项目、笔记标题和正文中的内容。</p>
     </header>
 
     <section class="search-wrap">
@@ -37,7 +37,7 @@ const isProd = import.meta.env.PROD;
               element: '#search',
               showSubResults: true,
               translations: {
-                placeholder: '搜索文章…',
+                placeholder: '搜索项目或笔记…',
                 clear_search: '清空',
                 load_more: '加载更多',
                 search_label: '搜索本站',
@@ -56,3 +56,4 @@ const isProd = import.meta.env.PROD;
     </>
   )}
 </BaseLayout>
+

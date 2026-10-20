@@ -1,0 +1,71 @@
+{
+  "syncedAt": "2026-10-20T10:07:09.310Z",
+  "repos": [
+    {
+      "name": "nextcloud-ops",
+      "fullName": "fat-cat-barbecue/nextcloud-ops",
+      "description": "基于 Nextcloud 的容器化私有云盘高可用运维体系（Nginx + MySQL + Redis + Prometheus）",
+      "url": "https://gitee.com/fat-cat-barbecue/nextcloud-ops",
+      "platform": "gitee",
+      "language": null,
+      "stars": 1,
+      "forks": 0,
+      "updatedAt": "2026-10-19T19:20:27+08:00"
+    },
+    {
+      "name": "picture-backend",
+      "fullName": "fat-cat-barbecue/picture-backend",
+      "description": "云图库后端----------",
+      "url": "https://gitee.com/fat-cat-barbecue/picture-backend",
+      "platform": "gitee",
+      "language": "Java",
+      "stars": 2,
+      "forks": 0,
+      "updatedAt": "2026-10-17T18:46:05+08:00"
+    },
+    {
+      "name": "Hunter-System",
+      "fullName": "fat-cat-barbecue/hunter-system",
+      "description": "基于C#+WPF+OPENCV的运动控制系统",
+      "url": "https://gitee.com/fat-cat-barbecue/hunter-system",
+      "platform": "gitee",
+      "language": "C#",
+      "stars": 2,
+      "forks": 0,
+      "updatedAt": "2026-10-17T18:46:03+08:00"
+    },
+    {
+      "name": "microservice-ha-ops",
+      "fullName": "fat-cat-barbecue/microservice-ha-ops",
+      "description": "若依微服务容器化部署与高可用运维平台 MySQL 双主高可用架构与数据库运维体系 Ansible 自动化运维与 Zabbix 全栈监控告警体系",
+      "url": "https://gitee.com/fat-cat-barbecue/microservice-ha-ops",
+      "platform": "gitee",
+      "language": "Shell",
+      "stars": 0,
+      "forks": 0,
+      "updatedAt": "2026-08-12T13:34:24+08:00"
+    },
+    {
+      "name": "cat-club",
+      "fullName": "fat-cat-barbecue/cat-club",
+      "description": "猫咪club，程序员社区",
+      "url": "https://gitee.com/fat-cat-barbecue/cat-club",
+      "platform": "gitee",
+      "language": "Java",
+      "stars": 0,
+      "forks": 0,
+      "updatedAt": "2026-04-10T02:41:58+08:00"
+    },
+    {
+      "name": "pig-take-out",
+      "fullName": "fat-cat-barbecue/pig-take-out",
+      "description": "小猪外卖------------",
+      "url": "https://gitee.com/fat-cat-barbecue/pig-take-out",
+      "platform": "gitee",
+      "language": null,
+      "stars": 0,
+      "forks": 0,
+      "updatedAt": "2026-04-04T05:15:01+08:00"
+    }
+  ]
+}

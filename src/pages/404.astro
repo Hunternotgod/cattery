@@ -1,15 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import CatMark from '../components/CatMark.astro';
+import Mascot from '../components/Mascot.astro';
 ---
-<BaseLayout title="页面不存在" description="这个页面好像被猫叼走了。">
+<BaseLayout title="页面不存在" description="这个页面好像被柯基叼走了。">
   <div class="container not-found">
-    <div>
-      <CatMark class="not-found-mark" />
+    <div class="not-found-panel">
+      <Mascot kind="corgi" class="not-found-mascot" />
       <p class="not-found-code">404</p>
-      <h1>这里没有猫</h1>
+      <h1>柯基把这一页叼走了</h1>
       <p>你访问的页面不存在，或者已经被挪到了别处。</p>
-      <a class="button button-primary" href="/">回到首页</a>
+      <a class="button button-primary" href="/">回到 cattery</a>
     </div>
   </div>
 </BaseLayout>

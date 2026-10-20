@@ -1,0 +1,61 @@
+---
+interface Props {
+  kind: 'cat' | 'pig' | 'corgi';
+  class?: string;
+}
+const { kind, class: className = '' } = Astro.props;
+---
+{kind === 'cat' && (
+  <svg class={className} viewBox="0 0 160 190" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M28 69 22 22l36 22h44l36-22-6 47" fill="#f39a3d" stroke="#191714" stroke-width="5" stroke-linejoin="round" />
+    <path d="M38 22 34 48l18-11" fill="#e8792b" />
+    <path d="M122 22 126 48l-18-11" fill="#e8792b" />
+    <rect x="34" y="58" width="92" height="74" rx="36" fill="#f39a3d" stroke="#191714" stroke-width="5" />
+    <rect x="52" y="120" width="56" height="44" rx="22" fill="#f39a3d" stroke="#191714" stroke-width="5" />
+    <path d="M52 73h16M92 73h16" stroke="#191714" stroke-width="8" stroke-linecap="round" />
+    <circle cx="60" cy="73" r="3" fill="#f2ebdd" />
+    <circle cx="100" cy="73" r="3" fill="#f2ebdd" />
+    <path d="m74 88 6 7 6-7H74Z" fill="#d9472b" />
+    <path d="M80 95c0 6-6 9-11 9M80 95c0 6 6 9 11 9" stroke="#191714" stroke-width="3" stroke-linecap="round" />
+    <path d="M50 91 24 85M50 98 24 102M110 91l26-6M110 98l26 4" stroke="#191714" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M100 158c18 0 28 12 20 24" stroke="#191714" stroke-width="6" stroke-linecap="round" />
+    <path d="M42 139h-.01M118 139h-.01" stroke="#191714" stroke-width="7" stroke-linecap="round" />
+    <path d="M50 118h60" stroke="#f7e8d4" stroke-width="8" stroke-linecap="round" opacity=".8" />
+  </svg>
+)}
+{kind === 'pig' && (
+  <svg class={className} viewBox="0 0 160 190" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="m34 70-8-28 28 12M126 70l8-28-28 12" fill="#f3a7b9" stroke="#191714" stroke-width="5" stroke-linejoin="round" />
+    <rect x="28" y="55" width="104" height="88" rx="42" fill="#f3a7b9" stroke="#191714" stroke-width="5" />
+    <rect x="48" y="118" width="64" height="52" rx="26" fill="#f3a7b9" stroke="#191714" stroke-width="5" />
+    <circle cx="58" cy="86" r="5" fill="#191714" />
+    <circle cx="102" cy="86" r="5" fill="#191714" />
+    <circle cx="60" cy="84" r="1.8" fill="#f2ebdd" />
+    <circle cx="104" cy="84" r="1.8" fill="#f2ebdd" />
+    <rect x="56" y="99" width="48" height="28" rx="14" fill="#e98ba0" stroke="#191714" stroke-width="4" />
+    <circle cx="70" cy="113" r="3" fill="#191714" />
+    <circle cx="90" cy="113" r="3" fill="#191714" />
+    <path d="M80 49v18" stroke="#d9472b" stroke-width="7" />
+    <path d="m80 67-9 13h18L80 67Z" fill="#d9472b" stroke="#191714" stroke-width="3" stroke-linejoin="round" />
+    <rect x="110" y="116" width="28" height="38" rx="3" fill="#f7e8d4" stroke="#191714" stroke-width="3" transform="rotate(8 110 116)" />
+    <path d="M116 126h16M116 134h13M116 142h15" stroke="#191714" stroke-width="2" opacity=".55" />
+    <path d="M46 139h-.01M114 139h-.01" stroke="#191714" stroke-width="7" stroke-linecap="round" />
+  </svg>
+)}
+{kind === 'corgi' && (
+  <svg class={className} viewBox="0 0 160 190" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M28 74 14 24l40 24h52l40-24-14 50" fill="#e8792b" stroke="#191714" stroke-width="5" stroke-linejoin="round" />
+    <path d="M40 25 34 55l22-16M120 25l6 30-22-16" fill="#f7e8d4" />
+    <rect x="30" y="58" width="100" height="78" rx="38" fill="#e8792b" stroke="#191714" stroke-width="5" />
+    <path d="M56 120h48v34H56z" fill="#f7e8d4" stroke="#191714" stroke-width="5" />
+    <path d="M50 76h18M92 76h18" stroke="#191714" stroke-width="7" stroke-linecap="round" />
+    <circle cx="59" cy="76" r="3" fill="#f2ebdd" />
+    <circle cx="101" cy="76" r="3" fill="#f2ebdd" />
+    <ellipse cx="80" cy="98" rx="22" ry="16" fill="#f7e8d4" stroke="#191714" stroke-width="3" />
+    <path d="m75 95 5 5 5-5H75Z" fill="#191714" />
+    <path d="M80 100c0 6-5 8-9 8M80 100c0 6 5 8 9 8" stroke="#191714" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M74 110h12v8H74z" fill="#ef7890" stroke="#191714" stroke-width="2" />
+    <path d="M46 151h-.01M114 151h-.01" stroke="#191714" stroke-width="7" stroke-linecap="round" />
+    <path d="M126 140c14 0 18 12 10 20" stroke="#191714" stroke-width="5" stroke-linecap="round" />
+  </svg>
+)}

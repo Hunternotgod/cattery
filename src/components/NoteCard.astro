@@ -1,0 +1,32 @@
+---
+import type { Note } from '../utils/notes';
+import { formatDateDot, noteHref, readingTime, tagHref } from '../utils/notes';
+
+interface Props {
+  note: Note;
+  showTags?: boolean;
+}
+const { note, showTags = true } = Astro.props;
+const minutes = readingTime(note.body ?? '');
+---
+<article class="note-row">
+  <time class="note-row-date" datetime={note.data.pubDate.toISOString()}>
+    {formatDateDot(note.data.pubDate)}
+  </time>
+
+  <div class="note-row-main">
+    <h2><a href={noteHref(note)}>{note.data.title}</a></h2>
+    <p>{note.data.description}</p>
+  </div>
+
+  <div class="note-row-meta">
+    <span class="reading">{minutes} 分钟</span>
+    {showTags && note.data.tags.length > 0 && (
+      <div class="tag-row">
+        {note.data.tags.map((tag) => (
+          <a class="tag" href={tagHref(tag)}>{tag}</a>
+        ))}
+      </div>
+    )}
+  </div>
+</article>

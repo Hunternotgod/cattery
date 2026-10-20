@@ -1,35 +1,46 @@
 ---
-import { SITE } from '../consts';
-import CatMark from './CatMark.astro';
+import { SITE } from '../data/site';
+import { REPO_SNAPSHOT } from '../data/repos';
+import BrandMark from './BrandMark.astro';
+
 const year = new Date().getFullYear();
+const synced = REPO_SNAPSHOT.syncedAt
+  ? new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(REPO_SNAPSHOT.syncedAt))
+  : null;
 ---
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-brand">
       <a class="brand" href="/" aria-label={`${SITE.title} 首页`}>
-        <CatMark class="brand-mark" />
+        <BrandMark class="brand-mark" />
         <span class="brand-name">{SITE.title}</span>
       </a>
-      <p>记录代码、猫与日常。</p>
+      <p>{SITE.tagline}</p>
     </div>
 
     <nav class="footer-nav" aria-label="页脚导航">
-      <a href="/posts/">文章</a>
-      <a href="/tags/">标签</a>
-      <a href="/archive/">归档</a>
+      <a href="/projects/">项目</a>
+      <a href="/notes/">笔记</a>
       <a href="/about/">关于</a>
       <a href="/search/">搜索</a>
-      <a href="#main">回到顶部</a>
+      <a href="/rss.xml">RSS</a>
+      <a href={SITE.giteeUrl} target="_blank" rel="noopener noreferrer">Gitee</a>
     </nav>
 
     <div class="footer-subscribe">
-      <p>订阅更新</p>
-      <a class="footer-rss" href="/rss.xml">RSS feed</a>
+      <p>关于这个站</p>
+      <a class="footer-rss" href="/about/">肥猫叉烧的个人作品集</a>
+      {synced && <small>仓库数据更新于 {synced}</small>}
     </div>
   </div>
 
   <div class="container footer-bottom">
-    <p>© {year} {SITE.title}</p>
-    <p>Astro + Markdown + Pagefind</p>
+    <p>© {year} {SITE.author}</p>
+    <p>Astro + Three.js + Gitee</p>
   </div>
 </footer>

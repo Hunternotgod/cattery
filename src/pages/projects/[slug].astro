@@ -1,0 +1,119 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Mascot from '../../components/Mascot.astro';
+import { SITE } from '../../data/site';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const data = project.data;
+const base = Astro.site ?? new URL('https://cattery.example.com');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: data.title,
+  description: data.summary,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Windows',
+  codeRepository: data.links.repo,
+  downloadUrl: data.links.download,
+  author: {
+    '@type': 'Person',
+    name: SITE.author,
+  },
+  url: new URL(`/projects/${project.id}/`, base).toString(),
+};
+---
+<BaseLayout
+  title={data.title}
+  description={data.summary}
+  image={data.cover ?? '/og-default.png'}
+  article
+  jsonLd={jsonLd}
+>
+  <article class="project-detail" data-pagefind-body>
+    <header class="project-hero container">
+      <div class="project-hero-copy">
+        <p class="section-kicker">project / {data.year}</p>
+        <h1 class="project-title" data-pagefind-meta="title">{data.title}</h1>
+        <p class="project-subtitle">{data.subtitle}</p>
+        <p class="project-summary">{data.summary}</p>
+
+        <dl class="project-meta-table">
+          <div><dt>角色</dt><dd>{data.role}</dd></div>
+          <div><dt>技术</dt><dd>{data.stack.slice(0, 4).join(' · ')}</dd></div>
+        </dl>
+
+        <div class="project-actions" data-pagefind-ignore>
+          {data.links.download && (
+            <a class="button button-primary" href={data.links.download} target="_blank" rel="noopener noreferrer">下载 Windows 版</a>
+          )}
+          {data.links.repo && (
+            <a class="text-link" href={data.links.repo} target="_blank" rel="noopener noreferrer">查看源码</a>
+          )}
+        </div>
+      </div>
+
+      <div class="project-hero-art">
+        {data.cover && <img src={data.cover} alt={`${data.title} 界面预览`} />}
+        <Mascot kind="cat" class="project-hero-mascot" />
+        <p class="project-art-note">猫工程师在调试今天的版本。</p>
+      </div>
+    </header>
+
+    <div class="container project-body-layout">
+      <div class="prose project-prose">
+        <Content />
+      </div>
+
+      <aside class="project-sidebar" data-pagefind-ignore>
+        <p class="section-kicker">stack</p>
+        <ul class="project-stack-list">
+          {data.stack.map((item) => <li>{item}</li>)}
+        </ul>
+        <div class="project-sidebar-rule"></div>
+        <p class="section-kicker">links</p>
+        <a href={SITE.giteeUrl} target="_blank" rel="noopener noreferrer">肥猫叉烧的 Gitee</a>
+        {data.links.repo && <a href={data.links.repo} target="_blank" rel="noopener noreferrer">喵秘书仓库</a>}
+        {data.links.download && <a href={data.links.download} target="_blank" rel="noopener noreferrer">最新安装包</a>}
+      </aside>
+    </div>
+
+    {data.screenshots.length > 0 && (
+      <section class="container project-gallery" data-pagefind-ignore>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">screens</p>
+            <h2 class="section-title">界面预览</h2>
+          </div>
+        </div>
+        <div class="project-screens">
+          {data.screenshots.map((shot, index) => (
+            <figure class:list={['project-screen', { 'is-wide': index === 0 }]}>
+              <img src={shot.src} alt={shot.alt} loading="lazy" />
+              {shot.caption && <figcaption>{String(index + 1).padStart(2, '0')} / {shot.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <footer class="container project-footer" data-pagefind-ignore>
+      <a class="back-link" href="/projects/">返回项目列表</a>
+      <a class="back-link" href="/notes/">去看看笔记</a>
+    </footer>
+  </article>
+</BaseLayout>
