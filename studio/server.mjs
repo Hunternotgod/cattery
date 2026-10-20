@@ -186,11 +186,108 @@ async function buildSite() {
   return { ok: true, steps: ['类型检查通过', '站点构建完成'], output: build.stdout };
 }
 
+function safeTrashFile(name) {
+  if (typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*\.md$/.test(name) || name.includes('..')) {
+    throw new Error('无效的回收站文件名');
+  }
+  return name;
+}
+
+function trashOriginalId(file) {
+  return file.replace(/-\d{4}-\d{2}-\d{2}T.*\.md$/, '').replace(/\.md$/, '');
+}
+
+async function listTrash() {
+  if (!existsSync(TRASH_ROOT)) return [];
+  const files = (await fs.readdir(TRASH_ROOT)).filter((file) => file.endsWith('.md'));
+  const entries = await Promise.all(files.map(async (file) => {
+    const filePath = path.join(TRASH_ROOT, file);
+    const [text, stat] = await Promise.all([fs.readFile(filePath, 'utf8'), fs.stat(filePath)]);
+    const parsed = matter(text);
+    return {
+      file,
+      id: trashOriginalId(file),
+      title: String(parsed.data.title ?? file.replace(/\.md$/, '')),
+      pubDate: toDateString(parsed.data.pubDate),
+      deletedAt: stat.mtime.toISOString(),
+    };
+  }));
+  return entries.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+}
+
+async function restoreTrash(file) {
+  const safeFile = safeTrashFile(file);
+  const source = path.join(TRASH_ROOT, safeFile);
+  if (!existsSync(source)) {
+    const error = new Error('回收站文件不存在');
+    error.statusCode = 404;
+    throw error;
+  }
+  const id = assertNoteId(trashOriginalId(safeFile));
+  const target = noteFile(id);
+  if (existsSync(target)) {
+    const error = new Error('同名文章已存在，无法恢复');
+    error.statusCode = 409;
+    throw error;
+  }
+  await fs.rename(source, target);
+  return getNote(id);
+}
+
+async function permanentlyDeleteTrash(file) {
+  const safeFile = safeTrashFile(file);
+  const source = path.join(TRASH_ROOT, safeFile);
+  if (!existsSync(source)) {
+    const error = new Error('回收站文件不存在');
+    error.statusCode = 404;
+    throw error;
+  }
+  await fs.unlink(source);
+}
+
+async function publishTrashDeletion(file) {
+  const safeFile = safeTrashFile(file);
+  const id = assertNoteId(trashOriginalId(safeFile));
+  const relative = path.posix.join('src/content/notes', `${id}.md`);
+  const tracked = await run('git', ['ls-files', '--error-unmatch', '--', relative]);
+  if (tracked.code !== 0) {
+    return { ok: true, skipped: true, steps: ['这篇文章没有提交过，线上无需删除'] };
+  }
+  const staged = await run('git', ['diff', '--cached', '--name-only']);
+  if (staged.code !== 0) return { ok: false, step: '检查暂存区', ...staged };
+  if (staged.stdout.trim()) {
+    return { ok: false, step: '安全检查', stderr: '当前 Git 暂存区还有其他变更。请先清空或提交暂存区，再执行“仅同步删除”。' };
+  }
+  const build = await buildSite();
+  if (!build.ok) return build;
+  const stage = await run('git', ['add', '--update', '--', relative]);
+  if (stage.code !== 0) return { ok: false, step: '暂存删除操作', ...stage };
+  const diff = await run('git', ['diff', '--cached', '--name-status']);
+  if (diff.code !== 0) return { ok: false, step: '确认删除范围', ...diff };
+  const changed = diff.stdout.split('\n').filter(Boolean);
+  if (changed.length !== 1 || !changed[0].startsWith('D\t')) {
+    return { ok: false, step: '安全检查', stderr: '删除范围异常，已停止发布。' };
+  }
+  const commit = await run('git', ['commit', '-m', `content: delete ${id}`]);
+  if (commit.code !== 0) return { ok: false, step: '提交删除', ...commit };
+  const gitee = await run('git', ['push', 'https://gitee.com/fat-cat-barbecue/cattery.git', 'main']);
+  if (gitee.code !== 0) return { ok: false, step: '推送 Gitee', ...gitee, hint: '删除 commit 已在本地，Gitee 推送失败。' };
+  const github = await run('git', ['push', 'github', 'main']);
+  if (github.code !== 0) return { ok: false, step: '推送 GitHub', ...github, hint: 'Gitee 已删除，GitHub 推送失败，请重试。' };
+  return { ok: true, steps: [...build.steps, '已提交仅删除操作', '已推送 Gitee', '已推送 GitHub；EdgeOne 将自动部署'] };
+}
+
 async function publishChanges(message) {
+  const noteStatus = await run('git', ['status', '--porcelain', '--', 'src/content/notes']);
+  if (noteStatus.code !== 0) return { ok: false, step: '检查文章状态', ...noteStatus };
+  const deletions = noteStatus.stdout.split('\n').filter((line) => /^(D | D)/.test(line));
+  if (deletions.length > 0) {
+    return { ok: false, step: '安全检查', stderr: '检测到未同步的文章删除。请到回收站使用“仅同步删除”，普通发布不会提交删除操作。' };
+  }
   const build = await buildSite();
   if (!build.ok) return build;
 
-  const add = await run('git', ['add', '--', 'src/content/notes', 'public/images/notes']);
+  const add = await run('git', ['add', '--ignore-removal', '--', 'src/content/notes', 'public/images/notes']);
   if (add.code !== 0) return { ok: false, step: '暂存文章', ...add };
 
   const staged = await run('git', ['diff', '--cached', '--quiet']);
@@ -299,6 +396,22 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (req.method === 'GET' && pathname === '/api/trash') {
+      return json(res, 200, { items: await listTrash() });
+    }
+    if (req.method === 'POST' && pathname === '/api/trash/restore') {
+      const { file } = await readJson(req);
+      return json(res, 200, { note: await restoreTrash(file) });
+    }
+    if (req.method === 'POST' && pathname === '/api/trash/publish-delete') {
+      const { file } = await readJson(req);
+      const result = await publishTrashDeletion(file);
+      return json(res, result.ok ? 200 : 500, result);
+    }
+    if (req.method === 'DELETE' && pathname.startsWith('/api/trash/')) {
+      await permanentlyDeleteTrash(decodeURIComponent(pathname.slice('/api/trash/'.length)));
+      return json(res, 200, { ok: true });
+    }
     if (req.method === 'GET' && pathname === '/api/notes') {
       return json(res, 200, { notes: await listNotes() });
     }

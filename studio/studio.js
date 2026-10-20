@@ -26,6 +26,8 @@ let currentId = null;
 let dirty = false;
 let previewTimer = 0;
 let busy = false;
+let noteFilter = 'all';
+let trashItems = [];
 
 class ApiError extends Error { constructor(message, data) { super(message); this.data = data; } }
 async function api(path, options = {}) {
@@ -72,10 +74,34 @@ const setForm = (note) => {
 };
 const renderNotes = () => {
   const term = ($('#note-search').value || '').trim().toLowerCase();
-  const visible = notes.filter((note) => !term || `${note.title} ${note.description} ${note.tags.join(' ')}`.toLowerCase().includes(term));
   noteList.replaceChildren();
+  if (noteFilter === 'trash') {
+    const visibleTrash = trashItems.filter((item) => !term || item.title.toLowerCase().includes(term));
+    if (visibleTrash.length === 0) {
+      const empty = document.createElement('p'); empty.className = 'trash-empty'; empty.textContent = '回收站是空的。删除的文章会先保存在这里。'; noteList.append(empty); return;
+    }
+    for (const item of visibleTrash) {
+      const card = document.createElement('div'); card.className = 'trash-item';
+      const title = document.createElement('strong'); title.textContent = item.title;
+      const meta = document.createElement('small'); meta.textContent = `${item.id} · 删除于 ${new Date(item.deletedAt).toLocaleString('zh-CN')}`;
+      const actions = document.createElement('div'); actions.className = 'trash-actions';
+      const restore = document.createElement('button'); restore.type = 'button'; restore.textContent = '恢复';
+      restore.addEventListener('click', () => restoreTrashItem(item.file));
+      const syncDelete = document.createElement('button'); syncDelete.type = 'button'; syncDelete.textContent = '仅同步删除';
+      syncDelete.addEventListener('click', () => publishTrashDeletion(item.file));
+      const purge = document.createElement('button'); purge.type = 'button'; purge.className = 'danger-action'; purge.textContent = '永久删除';
+      purge.addEventListener('click', () => permanentlyDeleteTrash(item.file));
+      actions.append(restore, syncDelete, purge); card.append(title, meta, actions); noteList.append(card);
+    }
+    return;
+  }
+  const visible = notes.filter((note) => {
+    if (noteFilter === 'draft' && !note.draft) return false;
+    if (noteFilter === 'published' && note.draft) return false;
+    return !term || `${note.title} ${note.description} ${note.tags.join(' ')}`.toLowerCase().includes(term);
+  });
   if (visible.length === 0) {
-    const empty = document.createElement('p'); empty.className = 'preview-placeholder'; empty.textContent = term ? '没有匹配的文章。' : '还没有文章。'; noteList.append(empty); return;
+    const empty = document.createElement('p'); empty.className = 'preview-placeholder'; empty.textContent = term ? '没有匹配的文章。' : '这个分类里还没有文章。'; noteList.append(empty); return;
   }
   for (const note of visible) {
     const button = document.createElement('button'); button.type = 'button';
@@ -88,9 +114,12 @@ const renderNotes = () => {
   }
 };
 const loadNotes = async () => { const data = await api('/api/notes'); notes = data.notes; renderNotes(); };
-const openNote = async (id) => { const data = await api(`/api/notes/${encodeURIComponent(id)}`); setForm(data.note); renderNotes(); };
+const loadTrash = async () => { const data = await api('/api/trash'); trashItems = data.items; renderNotes(); };
+const openNote = async (id) => { const data = await api(`/api/notes/${encodeURIComponent(id)}`); noteFilter = 'all'; syncFilterButtons(); setForm(data.note); renderNotes(); };
+const syncFilterButtons = () => document.querySelectorAll('[data-note-filter]').forEach((button) => button.classList.toggle('is-active', button.dataset.noteFilter === noteFilter));
+
 const maybeLeave = async () => !dirty || window.confirm('当前文章还有未保存修改，确定放弃吗？');
-const newNote = () => { if (!maybeLeave()) return; setForm(null); renderNotes(); fields.title.focus(); };
+const newNote = () => { if (!maybeLeave()) return; noteFilter = 'all'; syncFilterButtons(); setForm(null); renderNotes(); fields.title.focus(); };
 
 const saveNote = async () => {
   const data = payload();
@@ -167,6 +196,33 @@ const deleteCurrent = async () => {
   } catch (error) { showToast(error.message); }
   finally { setBusy(false); }
 };
+const restoreTrashItem = async (file) => {
+  setBusy(true);
+  try {
+    const result = await api('/api/trash/restore', { method: 'POST', body: JSON.stringify({ file }) });
+    noteFilter = 'all'; syncFilterButtons(); await loadNotes(); await loadTrash();
+    await openNote(result.note.id);
+    showToast('文章已从回收站恢复');
+  } catch (error) { showToast(error.message, 5000); }
+  finally { setBusy(false); }
+};
+const publishTrashDeletion = async (file) => {
+  if (!window.confirm('只同步删除这一篇文章？不会提交其他新增、修改或草稿。')) return;
+  setBusy(true);
+  try {
+    const result = await api('/api/trash/publish-delete', { method: 'POST', body: JSON.stringify({ file }) });
+    showPublishResult(result); await loadTrash(); await refreshGitStatus();
+  } catch (error) { showPublishResult(error.data, error); }
+  finally { setBusy(false); }
+};
+const permanentlyDeleteTrash = async (file) => {
+  if (!window.confirm('永久删除这个回收站备份？此操作无法从后台恢复。')) return;
+  setBusy(true);
+  try { await api(`/api/trash/${encodeURIComponent(file)}`, { method: 'DELETE' }); await loadTrash(); showToast('回收站备份已永久删除'); }
+  catch (error) { showToast(error.message); }
+  finally { setBusy(false); }
+};
+
 const uploadImage = async () => {
   const file = imageInput.files?.[0]; if (!file) return;
   const slug = fields.id.value.trim(); if (!slug) return showToast('请先填写文件名');
@@ -190,6 +246,12 @@ fields.body.addEventListener('input', () => { setDirty(true); schedulePreview();
 $('#new-note').addEventListener('click', newNote);
 $('#empty-new').addEventListener('click', newNote);
 $('#note-search').addEventListener('input', renderNotes);
+document.querySelectorAll('[data-note-filter]').forEach((button) => {
+  button.addEventListener('click', async () => {
+    noteFilter = button.dataset.noteFilter || 'all'; syncFilterButtons();
+    if (noteFilter === 'trash') await loadTrash(); else renderNotes();
+  });
+});
 saveDraft.addEventListener('click', saveNote);
 publishNote.addEventListener('click', publish);
 publishQuick.addEventListener('click', publish);
