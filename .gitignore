@@ -10,3 +10,7 @@ preview-*.png
 .qa/
 artifacts/
 .content-trash/
+
+# Tencent Cloud EdgeOne
+.edgeone/*
+.tef_dist/*

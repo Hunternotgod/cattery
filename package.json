@@ -13,7 +13,7 @@
     "content:sync": "npm run repos:sync && npm run release:sync && npm run contributions:sync",
     "contributions:sync": "node scripts/sync-gitee-contributions.mjs",
     "studio": "node studio/server.mjs",
-    "deploy": "npm run build && npx --yes edgeone@1.6.44 makers deploy dist --name cattery-live --env production --area overseas"
+    "deploy": "npm run content:sync && npm run build && npx --yes edgeone@1.6.44 makers deploy dist --name cattery-live --env production --area overseas"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

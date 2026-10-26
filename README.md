@@ -12,7 +12,7 @@
 - Markdown 笔记与项目内容
 - Pagefind 站内搜索
 - Gitee 仓库、release 与贡献热力图数据同步
-- EdgeOne Pages 静态部署
+- EdgeOne Makers 静态部署
 
 ## 本地运行
 
@@ -86,16 +86,35 @@ $env:GITEE_TOKEN="你的 token"
 npm run repos:sync
 ```
 
-### 每日自动更新（不需要后端）
+## 自动构建与部署
 
-GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync`，更新静态 JSON 快照；只有文件发生变化时才提交，先把 commit 推送到 Gitee 主仓库，再推送到 GitHub 镜像，最后由 EdgeOne Pages 重新构建。
+EdgeOne Makers 当前直接关联 Gitee 仓库：
 
-需要在 GitHub 仓库中配置：
+```text
+fat-cat-barbecue/cattery
+分支：main
+```
 
-- Secret `GITEE_TOKEN`：用于提高 Gitee API 限额，并允许 Actions 把快照 commit 回推到 Gitee 主仓库。
-- EdgeOne Pages 连接该 GitHub 仓库，并启用推送自动部署。
+每次推送到 Gitee `main`，EdgeOne 会自动：
 
-这个流程没有常驻服务器、数据库或运行时 API。
+1. 执行 `npm ci`。
+2. 执行 `npm run content:sync && npm run build`。
+3. 将 `dist` 发布到正式环境。
+
+因此，**推送 Gitee 就会自动更新博客网站**，不再依赖 GitHub Actions 或手动运行部署命令。
+
+Gitee Go 每日定时任务定义在 `.workflow/DailyRefresh.yml`，计划每天北京时间 03:10 调用 EdgeOne 部署钩子，重新同步热力图等公开数据。需要在 Gitee Go 的流水线变量中配置：
+
+- `EDGEONE_DEPLOY_HOOK`：EdgeOne 项目设置中的“部署钩子”完整 URL。
+
+如果暂时没有开通 Gitee Go，也可以先本机执行：
+
+```powershell
+npm run content:sync
+git add src/data/gitee-repos.json src/data/miao-secretary-release.json src/data/gitee-contributions.json
+git commit -m "chore: refresh Gitee data"
+git push origin main
+```
 
 ## 3D 与灯光
 
@@ -113,18 +132,19 @@ GitHub Actions 会在每天北京时间 03:10 自动运行 `npm run content:sync
 
 ## 双仓库发布
 
-- Gitee 是主仓库。
-- GitHub 是只读镜像，也是 EdgeOne Pages 的部署来源。
+- Gitee 是主仓库，也是 EdgeOne 的部署来源。
+- GitHub 是可选的只读镜像，不再参与网站部署。
 - 本地默认 `git push` 会同时推送两个仓库。
-- 写作后台发布顺序固定为：检查与构建 → 提交 → 推 Gitee → 推 GitHub → EdgeOne 自动部署。
+- 写作后台发布顺序为：检查与构建 → 提交 → 推 Gitee → 推 GitHub。EdgeOne 在 Gitee 收到提交后自动部署。
 
-## 部署到 EdgeOne Pages
+## EdgeOne 构建配置
 
-1. 把仓库推到 GitHub / GitLab，并在 EdgeOne Pages 导入项目。
-2. Node 版本：22。
-3. 构建命令：`npm run build`
-4. 输出目录：`dist`
-5. 环境变量：`SITE_URL=https://你的域名`
-6. 绑定自定义域名前，需要完成 ICP 备案。
+- Git 仓库：`fat-cat-barbecue/cattery`
+- 分支：`main`
+- Node 版本：`22.11.0`
+- 安装命令：`npm ci`
+- 构建命令：`npm run content:sync && npm run build`
+- 输出目录：`dist`
+- 环境变量：`SITE_URL=https://cattery.asia`
 
 > 部署前务必设置 `SITE_URL`，否则 canonical、RSS、sitemap 和分享卡片里仍然是示例域名。

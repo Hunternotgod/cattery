@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-10-20T10:07:09.310Z",
+  "syncedAt": "2026-10-26T11:41:14.019Z",
   "repos": [
     {
       "name": "nextcloud-ops",
@@ -46,17 +46,6 @@
       "updatedAt": "2026-08-12T13:34:24+08:00"
     },
     {
-      "name": "cat-club",
-      "fullName": "fat-cat-barbecue/cat-club",
-      "description": "猫咪club，程序员社区",
-      "url": "https://gitee.com/fat-cat-barbecue/cat-club",
-      "platform": "gitee",
-      "language": "Java",
-      "stars": 0,
-      "forks": 0,
-      "updatedAt": "2026-04-10T02:41:58+08:00"
-    },
-    {
       "name": "pig-take-out",
       "fullName": "fat-cat-barbecue/pig-take-out",
       "description": "小猪外卖------------",
@@ -66,6 +55,17 @@
       "stars": 0,
       "forks": 0,
       "updatedAt": "2026-04-04T05:15:01+08:00"
+    },
+    {
+      "name": "picture-frontend",
+      "fullName": "fat-cat-barbecue/picture-frontend",
+      "description": "云图库前端----------",
+      "url": "https://gitee.com/fat-cat-barbecue/picture-frontend",
+      "platform": "gitee",
+      "language": "JavaScript",
+      "stars": 0,
+      "forks": 0,
+      "updatedAt": "2026-03-24T16:08:47+08:00"
     }
   ]
 }

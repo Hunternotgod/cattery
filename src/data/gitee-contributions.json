@@ -1,39 +1,9 @@
 {
-  "syncedAt": "2026-10-20T12:35:22.176Z",
-  "total": 694,
-  "activeDays": 75,
+  "syncedAt": "2026-10-26T11:41:16.078Z",
+  "total": 718,
+  "activeDays": 77,
   "longestStreak": 9,
   "days": [
-    {
-      "date": "2025-10-21",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-10-22",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-10-23",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-10-24",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-10-25",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-10-26",
-      "count": 0,
-      "level": 0
-    },
     {
       "date": "2025-10-27",
       "count": 0,
@@ -1826,6 +1796,36 @@
     },
     {
       "date": "2026-10-20",
+      "count": 23,
+      "level": 4
+    },
+    {
+      "date": "2026-10-21",
+      "count": 1,
+      "level": 1
+    },
+    {
+      "date": "2026-10-22",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-10-23",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-10-24",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-10-25",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-10-26",
       "count": 0,
       "level": 0
     }
