@@ -1797,46 +1797,46 @@ export function initRoom(root: HTMLElement): void {
     speech.hidden = false;
     requestAnimationFrame(() => speech.classList.add('is-visible'));
     window.clearTimeout(speechHideTimer);
-    speechHideTimer = window.setTimeout(() => {
-      hideSpeech();
-      scheduleNextSpeech();
-    }, 5200);
+    speechHideTimer = window.setTimeout(hideSpeech, 3600);
   };
 
-  function scheduleNextSpeech(delay = 12000 + Math.random() * 12000) {
+  const speechDelay = () => 4000 + Math.random() * 2000;
+
+  function scheduleNextSpeech(delay = speechDelay()) {
     window.clearTimeout(speechTimer);
     speechTimer = window.setTimeout(() => {
       if (!visible || document.hidden) {
-        scheduleNextSpeech(6000);
+        scheduleNextSpeech(2000);
         return;
       }
       const stationKind = currentStation === 'cat' || currentStation === 'pig' || currentStation === 'corgi'
         ? currentStation
         : undefined;
       showSpeech(stationKind);
+      scheduleNextSpeech();
     }, delay);
   }
 
   const onCharacterInteraction = () => {
     hideSpeech();
-    scheduleNextSpeech(10000);
+    scheduleNextSpeech(2400 + Math.random() * 1200);
   };
   const onStationChange = () => {
     hideSpeech();
-    scheduleNextSpeech(8000);
+    scheduleNextSpeech(1800 + Math.random() * 1200);
   };
   const onVisibilityChange = () => {
     if (document.hidden) {
       window.clearTimeout(speechTimer);
       hideSpeech();
     } else {
-      scheduleNextSpeech(6000);
+      scheduleNextSpeech(1000 + Math.random() * 1000);
     }
   };
   window.addEventListener('cattery:character-interaction', onCharacterInteraction);
   window.addEventListener('cattery:station-change', onStationChange);
   document.addEventListener('visibilitychange', onVisibilityChange);
-  scheduleNextSpeech(7000 + Math.random() * 5000);
+  scheduleNextSpeech(1600 + Math.random() * 1200);
 
   if (import.meta.env.DEV || new URLSearchParams(location.search).has('room-debug')) {
     (window as unknown as {
@@ -1936,5 +1936,4 @@ export function initRoom(root: HTMLElement): void {
   applyStation('establishing', true);
   render();
 }
-
 

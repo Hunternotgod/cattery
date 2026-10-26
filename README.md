@@ -124,7 +124,7 @@ git push origin main
 - 开启“减少动态效果”时切换为静态海报和普通长页面。
 - WebGL 不可用时同样回退静态海报。
 - 海报：`public/images/room-poster.webp` 与 `public/images/room-poster-lit.webp`
-- 三只角色支持悬停、点击和横向拖拽；随机台词约每 22–38 秒出现一次。
+- 三只角色支持悬停、点击和横向拖拽；随机台词平均约每 5 秒出现一次。
 
 ## 角色与 Tripo
 
