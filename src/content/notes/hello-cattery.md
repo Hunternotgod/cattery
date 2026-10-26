@@ -3,7 +3,7 @@ title: "开博：给想法一个安静的落点"
 description: "cattery 的第一篇文章，聊聊为什么在信息流之外，还想保留一个自己的角落。"
 pubDate: 2026-10-20
 tags: ["随笔", "建站"]
-draft: false
+draft: true
 ---
 
 我们每天路过很多信息，但真正留下来的很少。

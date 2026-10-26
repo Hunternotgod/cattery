@@ -3,7 +3,7 @@ title: "最近读到的三件小事"
 description: "关于注意力、散步和把一件事做久一点的三则阅读笔记。"
 pubDate: 2026-10-10
 tags: ["阅读", "随笔"]
-draft: false
+draft: true
 ---
 
 最近读的东西比较杂，挑三件还记得住的小事记下来。
