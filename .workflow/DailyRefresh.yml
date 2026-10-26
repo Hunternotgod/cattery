@@ -3,7 +3,7 @@ name: daily-refresh
 displayName: 每日刷新 Gitee 数据
 triggers:
   schedule:
-    - cron: '10 19 * * ?'
+    - cron: '0 10 19 * * ?'
 stages:
   - name: refresh
     displayName: 刷新站点
@@ -20,3 +20,4 @@ stages:
         notify: []
         strategy:
           retry: '0'
+
