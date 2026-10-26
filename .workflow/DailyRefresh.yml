@@ -20,7 +20,8 @@ stages:
 triggers:
   trigger: auto
   schedule:
-  - cron: 0 10 19 * * ?
+  - cron: 0 0 16 * * ?
 notify: []
 ref_variable:
 - EDGEONE_DEPLOY_HOOK
+

@@ -103,7 +103,7 @@ fat-cat-barbecue/cattery
 
 因此，**推送 Gitee 就会自动更新博客网站**，不再依赖 GitHub Actions 或手动运行部署命令。
 
-Gitee Go 每日定时任务定义在 `.workflow/DailyRefresh.yml`，计划每天北京时间 03:10 调用 EdgeOne 部署钩子，重新同步热力图等公开数据。需要在 Gitee Go 的流水线变量中配置：
+Gitee Go 每日定时任务定义在 `.workflow/DailyRefresh.yml`，计划每天北京时间 00:00 调用 EdgeOne 部署钩子（Gitee Go 使用 UTC，对应 cron 16:00），重新同步热力图等公开数据。需要在 Gitee Go 的流水线变量中配置：
 
 - `EDGEONE_DEPLOY_HOOK`：EdgeOne 项目设置中的“部署钩子”完整 URL。
 
@@ -148,3 +148,4 @@ git push origin main
 - 环境变量：`SITE_URL=https://cattery.asia`
 
 > 部署前务必设置 `SITE_URL`，否则 canonical、RSS、sitemap 和分享卡片里仍然是示例域名。
+
