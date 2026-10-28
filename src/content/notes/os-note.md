@@ -1,7 +1,7 @@
 ---
 title: "操作系统笔记"
 description: "操作系统的笔记"
-pubDate: 2026-10-26
+pubDate: 2026-10-26-至今
 tags: ["操作系统", "笔记","复习"]
 draft: false
 ---
